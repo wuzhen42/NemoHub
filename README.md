@@ -1,2 +1,2 @@
-# NemoClient
+# NemoHub
 open source client for https://www.nemopuppet.com

@@ -9,7 +9,7 @@ from distutils.sysconfig import get_python_lib
 args = [
     "nuitka",
     "--standalone",
-    "--windows-disable-console",
+    # "--windows-disable-console",
     "--follow-import-to=app",
     "--plugin-enable=pyside6",
     "--include-qt-plugins=sensible,styles",
@@ -28,6 +28,8 @@ os.system(" ".join(args))
 # copy site-packages to dist folder
 dist_folder = Path("dist/client/client.dist")
 site_packages = Path(get_python_lib())
+
+copy("update.bat", dist_folder)
 
 copied_libs = ["urllib3"]
 
