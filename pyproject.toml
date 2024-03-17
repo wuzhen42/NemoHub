@@ -1,0 +1,23 @@
+[tool.poetry]
+package-mode = false
+name = "nemoclient"
+version = "0.1.0"
+description = ""
+authors = ["wuzhen <gwuzhen@gmail.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11, <3.12"
+PySide6 = "<=6.4.2"
+pyside6-fluent-widgets = "^1.5.1"
+requests = "^2.31.0"
+tzlocal = "^5.2"
+
+
+[tool.poetry.group.dev.dependencies]
+nuitka = "^2.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

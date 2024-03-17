@@ -1,0 +1,10 @@
+*.pyc
+__pycache__/
+
+resource_rc.py
+ui_*.py
+
+dist/
+config/
+
+poetry.lock
