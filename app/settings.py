@@ -39,7 +39,8 @@ class SettingsWidget(QFrame):
         self.currentHub = version.Version("0.0.3")
         self.latestHub = None
         self.currentNemo = None
-        self.latestNemo = None
+        self.stableNemo = None
+        self.nightlyNemo = None
 
         self.setObjectName("Settings")
         self.setup()
@@ -84,26 +85,46 @@ class SettingsWidget(QFrame):
             else:
                 self.latestHub = None
 
-        if self.latestNemo and self.currentNemo and self.latestNemo > self.currentNemo:
+        if not self.currentNemo:
+            return
+
+        isCurrentNightly = self.currentNemo[0] == "nightly"
+        hasUpdate = (
+            self.nightlyNemo[1] > self.currentNemo[1]
+            if isCurrentNightly
+            else self.stableNemo[0] > version.parse(self.currentNemo[0])
+        )
+        if hasUpdate:
             title = "New version of NemoMaya dectected"
-            currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
-            latestDate = self.latestNemo[1].strftime("%Y-%m-%d")
-            content = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest version is at {latestDate}.\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
+            if isCurrentNightly:
+                currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
+                latestDate = self.nightlyNemo[1].strftime("%Y-%m-%d")
+                message = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest version is at {latestDate}."
+            else:
+                message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest version is {self.stableNemo[0]}."
+            content = f"{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
+
             if w.exec():
+                target_version = (
+                    "nightly" if isCurrentNightly else str(self.stableNemo[0])
+                )
                 recv = requests.get(
-                    "https://www.nemopuppet.com/api/release/nightly/maya", stream=True
+                    f"https://www.nemopuppet.com/api/release/{target_version}/maya",
+                    stream=True,
                 )
                 tmpdir = tempfile.mkdtemp()
-                output_path = "{}/NemoMaya_nightly.zip".format(tmpdir)
+                output_path = f"{tmpdir}/NemoMaya_{target_version}.zip"
                 with open(output_path, "wb") as f:
                     shutil.copyfileobj(recv.raw, f)
                 with zipfile.ZipFile(output_path, allowZip64=True) as archive:
                     archive.extractall(tmpdir)
                 os.remove(output_path)
 
-                path_modules = "{}/Documents/maya/modules".format(os.path.expanduser("~"))
+                path_modules = "{}/Documents/maya/modules".format(
+                    os.path.expanduser("~")
+                )
                 target_dir = "{}/Nemo".format(path_modules)
                 shutil.rmtree(target_dir)
                 shutil.copytree("{}/Nemo".format(tmpdir), target_dir)
@@ -112,16 +133,17 @@ class SettingsWidget(QFrame):
                     title="NemoMaya updated",
                     content=f"You can restart maya to try latest features now",
                     orient=Qt.Horizontal,
-                    isClosable=False,
+                    isClosable=True,
                     position=InfoBarPosition.TOP,
-                    duration=3000,
+                    duration=-1,
                     parent=self,
                 )
-                self.latestNemo = None
                 self.currentNemo = None
+                self.stableNemo = None
+                self.nightlyNemo = None
                 self.checkNemoVersion()
             else:
-                self.latestNemo = None
+                self.currentNemo = None
 
     def checkNemoVersion(self):
         def run(widget, card):
@@ -155,10 +177,13 @@ class SettingsWidget(QFrame):
             response = requests.get("https://www.nemopuppet.com/api/releases").json()
             versions = []
             for item in response:
-                ver = item["version"]
                 date = datetime.datetime.strptime(item["date"], "%Y/%m/%d").date()
-                versions.append((ver, date))
-            widget.latestNemo = max(versions, key=lambda item: item[1])
+                ver = item["version"]
+                if ver == "nightly":
+                    widget.nightlyNemo = (ver, date)
+                else:
+                    versions.append((version.parse(ver), date))
+            widget.stableNemo = max(versions, key=lambda item: item[1])
 
         threading.Thread(target=run, args=(self,)).start()
 
