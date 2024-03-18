@@ -51,6 +51,8 @@ class EasyWidget(QFrame):
 
     def submit(self):
         try:
+            if not cfg.mayaVersion.value:
+                raise RuntimeError("Must select maya version first in Settings")
             mayapy = f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"'
             args = [
                 self.inputName.text(),
@@ -73,14 +75,22 @@ class EasyWidget(QFrame):
             kargs = [f"{k}={cast(v)}" for k, v in kargs.items()]
             func_call = f"convert.process({','.join(args)}, {','.join(kargs)})"
             command = f"{mayapy} -c \"from maya import standalone; standalone.initialize(name='python'); from nemo.pipeline import convert; {func_call}\""
+            home = os.path.expanduser("~")
+            nemo_extern = f"{home}/Documents/maya/modules/Nemo/extern/"
+
+            env = os.environ.copy()
+            env["PYTHONPATH"] = nemo_extern
+            if cfg.mayaVersion.value < 2022:
+                env["OPENSSL_ia32cap"] = "0x20000000"
             proc = subprocess.Popen(
                 command,
                 shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                cwd=home,
+                env=env,
             )
             new_task(self.inputName.text(), self.outputFolder.path, proc)
-            # subprocess.check_output(command, shell=True)
         except Exception as e:
             InfoBar.error(
                 title="Create Task Failed",

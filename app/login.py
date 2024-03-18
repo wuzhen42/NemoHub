@@ -18,7 +18,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
     def __init__(self):
         super().__init__()
 
-        self.settings = QSettings("NemoClient", "login")
+        self.settings = QSettings("NemoHub", "login")
 
         self.setupUi(self)
         # setTheme(Theme.DARK)
@@ -27,7 +27,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
         self.setTitleBar(SplitTitleBar(self))
         self.titleBar.raise_()
 
-        self.setWindowTitle("Nemo Puppet Client")
+        self.setWindowTitle("Nemo Hub")
         self.setWindowIcon(QIcon(":/images/logo.png"))
         inputFormWidth = 250
         self.widget.setMinimumSize(QSize(inputFormWidth, 0))
@@ -83,9 +83,11 @@ class LoginWindow(FramelessWindow, Ui_Form):
     def save_settings(self):
         self.settings.setValue("savePassword", self.checkSavePassword.isChecked())
         self.settings.setValue("account", self.inputAccount.text())
-        self.settings.setValue("password", self.inputPassword.text())
+        if self.checkSavePassword.isChecked():
+            self.settings.setValue("password", self.inputPassword.text())
 
     def submit(self):
+        auth = None
         try:
             account = self.inputAccount.text()
             password = self.inputPassword.text()

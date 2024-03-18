@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from shutil import copy, copytree
+from shutil import copy
 from distutils.sysconfig import get_python_lib
 
 
@@ -20,26 +20,13 @@ args = [
     "--include-module=app",
     "--nofollow-import-to=pywin,pycryptodome",
     "--follow-import-to=win32gui,win32print,qfluentwidgets,app",
-    "--output-dir=dist/client",
-    "client.py",
+    "--output-dir=dist/NemoHub",
+    "NemoHub.py",
 ]
 os.system(" ".join(args))
 
 # copy site-packages to dist folder
-dist_folder = Path("dist/client/client.dist")
+dist_folder = Path("dist/NemoHub/NemoHub.dist")
 site_packages = Path(get_python_lib())
 
 copy("update.bat", dist_folder)
-
-copied_libs = ["urllib3"]
-
-for src in copied_libs:
-    src = site_packages / src
-    dist = dist_folder / src.name
-
-    print(f"Coping site-packages `{src}` to `{dist}`")
-
-    if src.is_file():
-        copy(src, dist)
-    else:
-        copytree(src, dist)
