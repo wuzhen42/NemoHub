@@ -36,7 +36,7 @@ from app.config import cfg
 class SettingsWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.currentHub = version.Version("0.0.3")
+        self.currentHub = version.Version("0.0.4")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
