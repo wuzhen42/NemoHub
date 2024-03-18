@@ -8,7 +8,7 @@ import shutil
 import zipfile
 
 import tzlocal
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QFrame,
     QVBoxLayout,
@@ -22,6 +22,8 @@ from qfluentwidgets import (
     HyperlinkCard,
     PrimaryPushSettingCard,
     MessageDialog,
+    InfoBar,
+    InfoBarPosition,
 )
 from qfluentwidgets import FluentIcon as FIF
 import requests
@@ -34,9 +36,10 @@ from app.config import cfg
 class SettingsWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.currentHub = version.Version("0.0.2")
+        self.currentHub = version.Version("0.0.3")
         self.latestHub = None
         self.currentNemo = None
+        self.latestNemo = None
 
         self.setObjectName("Settings")
         self.setup()
@@ -81,6 +84,45 @@ class SettingsWidget(QFrame):
             else:
                 self.latestHub = None
 
+        if self.latestNemo and self.currentNemo and self.latestNemo > self.currentNemo:
+            title = "New version of NemoMaya dectected"
+            currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
+            latestDate = self.latestNemo[1].strftime("%Y-%m-%d")
+            content = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest version is at {latestDate}.\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
+            parent = self.parent().parent().parent()
+            w = MessageDialog(title, content, parent)
+            if w.exec():
+                recv = requests.get(
+                    "https://www.nemopuppet.com/api/release/nightly/maya", stream=True
+                )
+                tmpdir = tempfile.mkdtemp()
+                output_path = "{}/NemoMaya_nightly.zip".format(tmpdir)
+                with open(output_path, "wb") as f:
+                    shutil.copyfileobj(recv.raw, f)
+                with zipfile.ZipFile(output_path, allowZip64=True) as archive:
+                    archive.extractall(tmpdir)
+                os.remove(output_path)
+
+                path_modules = "{}/Documents/maya/modules".format(os.path.expanduser("~"))
+                target_dir = "{}/Nemo".format(path_modules)
+                shutil.rmtree(target_dir)
+                shutil.copytree("{}/Nemo".format(tmpdir), target_dir)
+                shutil.copy("{}/nemo.mod".format(tmpdir), target_dir)
+                InfoBar.success(
+                    title="NemoMaya updated",
+                    content=f"You can restart maya to try latest features now",
+                    orient=Qt.Horizontal,
+                    isClosable=False,
+                    position=InfoBarPosition.TOP,
+                    duration=3000,
+                    parent=self,
+                )
+                self.latestNemo = None
+                self.currentNemo = None
+                self.checkNemoVersion()
+            else:
+                self.latestNemo = None
+
     def checkNemoVersion(self):
         def run(widget, card):
             result = call_maya(
@@ -93,7 +135,6 @@ class SettingsWidget(QFrame):
             if not result:
                 return
             version, ts = result.splitlines()[-2:]
-            widget.currentNemo = (version, ts)
 
             ts = datetime.datetime.strptime(ts, "%Y%m%d%H%M")
             ts = datetime.datetime(
@@ -105,9 +146,21 @@ class SettingsWidget(QFrame):
                 tzinfo=datetime.timezone.utc,
             )
             ts = ts.astimezone(tzlocal.get_localzone())
+            widget.currentNemo = (version, ts.date())
             card.setContent(f"Version: {version} Date:{ts.strftime('%Y-%m-%d %I:%M')}")
 
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
+
+        def run(widget):
+            response = requests.get("https://www.nemopuppet.com/api/releases").json()
+            versions = []
+            for item in response:
+                ver = item["version"]
+                date = datetime.datetime.strptime(item["date"], "%Y/%m/%d").date()
+                versions.append((ver, date))
+            widget.latestNemo = max(versions, key=lambda item: item[1])
+
+        threading.Thread(target=run, args=(self,)).start()
 
     def checkHubVersion(self):
         def run(widget):

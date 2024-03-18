@@ -1,4 +1,4 @@
-cd "%2"
+cd /d "%2"
 del /q *.*
 for /d %%i in (*) do rmdir /s /q "%%i" 
 
