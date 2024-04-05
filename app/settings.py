@@ -36,7 +36,7 @@ from app.config import cfg
 class SettingsWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.currentHub = version.Version("0.0.5")
+        self.currentHub = version.Version("0.0.6")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
@@ -94,6 +94,7 @@ class SettingsWidget(QFrame):
             if isCurrentNightly
             else self.stableNemo[0] > version.parse(self.currentNemo[0])
         )
+
         if hasUpdate:
             title = "New version of NemoMaya dectected"
             if isCurrentNightly:
@@ -101,7 +102,10 @@ class SettingsWidget(QFrame):
                 latestDate = self.nightlyNemo[1].strftime("%Y-%m-%d")
                 message = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest version is at {latestDate}."
             else:
-                message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest version is {self.stableNemo[0]}."
+                if self.currentNemo[0] == "v0.0.0":
+                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest version is {self.stableNemo[0]}."
+                else:
+                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest version is {self.stableNemo[0]}."
             content = f"{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
@@ -147,17 +151,23 @@ class SettingsWidget(QFrame):
 
     def checkNemoVersion(self):
         def run(widget, card):
-            result = call_maya(
-                [
-                    "import NemoMaya",
-                    "print(NemoMaya.get_version())",
-                    "print(NemoMaya.get_timestamp())",
-                ]
-            )
-            if not result:
+            if not cfg.mayaVersion.value:
                 return
-            version, ts = result.splitlines()[-2:]
+            try: 
+                result = call_maya(
+                    [
+                        "import NemoMaya",
+                        "print(NemoMaya.get_version())",
+                        "print(NemoMaya.get_timestamp())",
+                    ]
+                )
+                if not result:
+                    return
+            except subprocess.CalledProcessError:
+                self.currentNemo = ("v0.0.0", datetime.date.today())
+                return
 
+            version, ts = result.splitlines()[-2:]
             ts = datetime.datetime.strptime(ts, "%Y%m%d%H%M")
             ts = datetime.datetime(
                 ts.year,

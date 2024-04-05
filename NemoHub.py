@@ -77,7 +77,7 @@ class ClientWindow(FluentWindow):
     def initWindow(self):
         self.resize(900, 700)
         self.setWindowIcon(QIcon(":/images/logo.png"))
-        self.setWindowTitle("Nemo Puppet Client")
+        self.setWindowTitle("Nemo Hub")
 
         desktop = QApplication.screens()[0].availableGeometry()
         w, h = desktop.width(), desktop.height()

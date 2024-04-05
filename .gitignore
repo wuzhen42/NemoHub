@@ -6,5 +6,6 @@ ui_*.py
 
 dist/
 config/
+Output/
 
 poetry.lock
