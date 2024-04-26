@@ -88,31 +88,35 @@ class SettingsWidget(QFrame):
         if not self.currentNemo:
             return
 
-        isCurrentNightly = self.currentNemo[0] == "nightly"
         hasUpdate = (
             self.nightlyNemo[1] > self.currentNemo[1]
-            if isCurrentNightly
-            else self.stableNemo[0] > version.parse(self.currentNemo[0])
+            if cfg.useNightlyVersion.value
+            else self.currentNemo[0] == "nightly" or self.stableNemo[0] > version.parse(self.currentNemo[0])
         )
 
         if hasUpdate:
             title = "New version of NemoMaya dectected"
-            if isCurrentNightly:
+            if cfg.useNightlyVersion.value:
                 currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
                 latestDate = self.nightlyNemo[1].strftime("%Y-%m-%d")
-                message = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest version is at {latestDate}."
+                if self.currentNemo[0] == "v0.0.0":
+                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest nightly version is released at {latestDate}."
+                elif self.currentNemo[0] == "nightly":
+                    message = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest nightly version is released at {latestDate}."
+                else:
+                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest nightly version is released at {latestDate}."
             else:
                 if self.currentNemo[0] == "v0.0.0":
-                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest version is {self.stableNemo[0]}."
+                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest stable version is {self.stableNemo[0]}."
                 else:
-                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest version is {self.stableNemo[0]}."
+                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest stable version is {self.stableNemo[0]}."
             content = f"{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
 
             if w.exec():
                 target_version = (
-                    "nightly" if isCurrentNightly else str(self.stableNemo[0])
+                    "nightly" if cfg.useNightlyVersion.value else str(self.stableNemo[0])
                 )
                 recv = requests.get(
                     f"https://www.nemopuppet.com/api/release/{target_version}/maya",
@@ -130,9 +134,10 @@ class SettingsWidget(QFrame):
                     os.path.expanduser("~")
                 )
                 target_dir = "{}/Nemo".format(path_modules)
-                shutil.rmtree(target_dir)
+                if os.path.isdir(target_dir):
+                    shutil.rmtree(target_dir)
                 shutil.copytree("{}/Nemo".format(tmpdir), target_dir)
-                shutil.copy("{}/nemo.mod".format(tmpdir), target_dir)
+                shutil.copy("{}/nemo.mod".format(tmpdir), path_modules)
                 InfoBar.success(
                     title="NemoMaya updated",
                     content=f"You can restart maya to try latest features now",
@@ -164,7 +169,7 @@ class SettingsWidget(QFrame):
                 if not result:
                     return
             except subprocess.CalledProcessError:
-                self.currentNemo = ("v0.0.0", datetime.date.today())
+                self.currentNemo = ("v0.0.0", datetime.date.min)
                 return
 
             version, ts = result.splitlines()[-2:]
@@ -227,6 +232,14 @@ class SettingsWidget(QFrame):
             configItem=cfg.checkUpdateAtStartUp,
         )
         self.layout.addWidget(self.switchAutoUpdate)
+
+        self.switchUseNightly = SwitchSettingCard(
+            FIF.DEVELOPER_TOOLS,
+            self.tr("Use nightly beta version"),
+            self.tr("The nightly version is always the latest, but may be unstable. Be sure only using it for testing purpose"),
+            configItem=cfg.useNightlyVersion,
+        )
+        self.layout.addWidget(self.switchUseNightly)
 
         self.helpCard = HyperlinkCard(
             "https://docs.nemopuppet.com",

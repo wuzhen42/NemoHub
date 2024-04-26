@@ -29,6 +29,11 @@ class Config(QConfig):
         "Update", "CheckUpdateAtStartUp", True, BoolValidator()
     )
 
+    useNightlyVersion = ConfigItem(
+        "Update", "UseNightlyVersion", False, BoolValidator()
+    )
+
+
 
 cfg = Config()
 qconfig.load("config/config.json", cfg)
