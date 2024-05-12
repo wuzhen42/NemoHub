@@ -36,7 +36,7 @@ from app.config import cfg
 class SettingsWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-        self.currentHub = version.Version("0.0.6")
+        self.currentHub = version.Version("0.0.7")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
@@ -91,7 +91,8 @@ class SettingsWidget(QFrame):
         hasUpdate = (
             self.nightlyNemo[1] > self.currentNemo[1]
             if cfg.useNightlyVersion.value
-            else self.currentNemo[0] == "nightly" or self.stableNemo[0] > version.parse(self.currentNemo[0])
+            else self.currentNemo[0] == "nightly"
+            or self.stableNemo[0] > version.parse(self.currentNemo[0])
         )
 
         if hasUpdate:
@@ -116,7 +117,9 @@ class SettingsWidget(QFrame):
 
             if w.exec():
                 target_version = (
-                    "nightly" if cfg.useNightlyVersion.value else str(self.stableNemo[0])
+                    "nightly"
+                    if cfg.useNightlyVersion.value
+                    else str(self.stableNemo[0])
                 )
                 recv = requests.get(
                     f"https://www.nemopuppet.com/api/release/{target_version}/maya",
@@ -153,12 +156,14 @@ class SettingsWidget(QFrame):
                 self.checkNemoVersion()
             else:
                 self.currentNemo = None
+        else:
+            self.currentNemo = None
 
     def checkNemoVersion(self):
         def run(widget, card):
             if not cfg.mayaVersion.value:
                 return
-            try: 
+            try:
                 result = call_maya(
                     [
                         "import NemoMaya",
@@ -236,7 +241,9 @@ class SettingsWidget(QFrame):
         self.switchUseNightly = SwitchSettingCard(
             FIF.DEVELOPER_TOOLS,
             self.tr("Use nightly beta version"),
-            self.tr("The nightly version is always the latest, but may be unstable. Be sure only using it for testing purpose"),
+            self.tr(
+                "The nightly version is always the latest, but may be unstable. Be sure only using it for testing purpose"
+            ),
             configItem=cfg.useNightlyVersion,
         )
         self.layout.addWidget(self.switchUseNightly)

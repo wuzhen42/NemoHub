@@ -33,6 +33,12 @@ class Config(QConfig):
         "Update", "UseNightlyVersion", False, BoolValidator()
     )
 
+    convertModernOn = ConfigItem("Convert", "ModernOptionOn", False, BoolValidator())
+    convertNativeOn = ConfigItem("Convert", "NativeOptionOn", False, BoolValidator())
+    convertDoubleOn = ConfigItem("Convert", "DoubleOptionOn", False, BoolValidator())
+    convertForceOn = ConfigItem("Convert", "ForceOptionOn", True, BoolValidator())
+    convertProfileOn = ConfigItem("Convert", "ProfileOptionOn", False, BoolValidator())
+    convertGpuOn = ConfigItem("Convert", "GpuOptionOn", True, BoolValidator())
 
 
 cfg = Config()

@@ -37,9 +37,12 @@ class EasyWidget(QFrame):
         self.inputFile.setExtensions(["ma", "mb"])
         self.inputFile.pathChanged.connect(self.setInputPath)
         self.outputFolder.pathChanged.connect(self.setOutputPath)
-        self.optionGPU.setChecked(True)
-        self.optionForce.setChecked(True)
-        self.optionModern.setChecked(True)
+        self.optionGPU.setChecked(cfg.convertGpuOn.value)
+        self.optionDouble.setChecked(cfg.convertDoubleOn.value)
+        self.optionForce.setChecked(cfg.convertForceOn.value)
+        self.optionModern.setChecked(cfg.convertModernOn.value)
+        self.optionNative.setChecked(cfg.convertNativeOn.value)
+        self.optionProfile.setChecked(cfg.convertProfileOn.value)
         self.buttonSubmit.clicked.connect(self.submit)
 
     def setInputPath(self, path):
@@ -53,6 +56,13 @@ class EasyWidget(QFrame):
         try:
             if not cfg.mayaVersion.value:
                 raise RuntimeError("Must select maya version first in Settings")
+            cfg.convertGpuOn.value = self.optionGPU.isChecked()
+            cfg.convertDoubleOn.value = self.optionDouble.isChecked()
+            cfg.convertForceOn.value = self.optionForce.isChecked()
+            cfg.convertModernOn.value = self.optionModern.isChecked()
+            cfg.convertNativeOn.value = self.optionNative.isChecked()
+            cfg.convertProfileOn.value = self.optionProfile.isChecked()
+
             mayapy = f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"'
             args = [
                 self.inputName.text(),
@@ -63,9 +73,11 @@ class EasyWidget(QFrame):
                 "username": self.loginTuple[0],
                 "password": self.loginTuple[1],
                 "double": self.optionDouble.isChecked(),
+                "preview": not self.optionNative.isChecked(),
                 "ctrl_proxy": self.optionModern.isChecked(),
                 "overwrite": self.optionForce.isChecked(),
                 "gpu": self.optionGPU.isChecked(),
+                "restoreProfile": self.optionProfile.isChecked(),
             }
 
             def cast(x):
@@ -187,22 +199,26 @@ class EasyWidget(QFrame):
         self.optionDouble = PillPushButton("double")
         self.optionForce = PillPushButton("force")
         self.optionGPU = PillPushButton("gpu")
+        self.optionNative = PillPushButton("native")
         self.optionModern = PillPushButton("modern")
+        self.optionProfile = PillPushButton("profile")
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, 0
         )
         subLayout.addWidget(self.optionDouble, 0, 1)
         subLayout.addWidget(self.optionForce, 0, 2)
+        subLayout.addWidget(self.optionGPU, 0, 3)
         subLayout.addItem(
-            QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, 3
+            QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, 4
         )
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 0
         )
-        subLayout.addWidget(self.optionGPU, 1, 1)
+        subLayout.addWidget(self.optionNative, 1, 1)
         subLayout.addWidget(self.optionModern, 1, 2)
+        subLayout.addWidget(self.optionProfile, 1, 3)
         subLayout.addItem(
-            QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 3
+            QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 4
         )
         self.layout.addLayout(subLayout)
 
