@@ -40,7 +40,7 @@ class ClientWindow(FluentWindow):
         self.easyArea = EasyWidget(loginTuple, self)
         self.batchArea = Widget("Multiple in batch", self)
         self.assetsArea = AssetsWidget(self)
-        self.settingArea = SettingsWidget(self)
+        self.settingArea = SettingsWidget(loginTuple, self)
 
         self.initNavigation()
         self.initWindow()

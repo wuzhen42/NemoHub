@@ -6,6 +6,7 @@ import tempfile
 import threading
 import shutil
 import zipfile
+import json
 
 import tzlocal
 from PySide6.QtCore import Qt, QTimer
@@ -34,19 +35,23 @@ from app.config import cfg
 
 
 class SettingsWidget(QFrame):
-    def __init__(self, parent=None):
+    def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
+        self.loginTuple = loginTuple
         self.currentHub = version.Version("0.0.7")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
         self.nightlyNemo = None
+        self.machineID = None
+        self.expired = None
 
         self.setObjectName("Settings")
         self.setup()
         if cfg.checkUpdateAtStartUp.value:
             self.checkHubVersion()
             self.checkNemoVersion()
+        self.getSeatLicense()
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.onCheckUpdate)
@@ -196,6 +201,7 @@ class SettingsWidget(QFrame):
         def run(widget):
             response = requests.get("https://www.nemopuppet.com/api/releases").json()
             versions = []
+            widget.nightlyNemo = ("None", datetime.date.min)
             for item in response:
                 date = datetime.datetime.strptime(item["date"], "%Y/%m/%d").date()
                 ver = item["version"]
@@ -207,6 +213,55 @@ class SettingsWidget(QFrame):
 
         threading.Thread(target=run, args=(self,)).start()
 
+    def getSeatLicense(self):
+        license_path = os.path.expanduser("~/Documents/NemoSeat.lic")
+        if os.path.exists(license_path):
+            try:
+                with open(license_path, "r") as f:
+                    data = json.loads(json.load(f)["message"])
+                    self.machineID = data["machine"]
+                    self.expired = datetime.datetime.fromtimestamp(data["expired_at"])
+            except Exception:
+                self.machineID = None
+        else:
+            self.machineID = None
+
+        if self.machineID and self.expired:
+            self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
+            ts = self.expired.astimezone(tzlocal.get_localzone())
+            self.licenseCard.setTitle(
+                self.tr("License")
+                + " | "
+                + self.tr("Expired at ")
+                + ts.strftime("%Y-%m-%d")
+            )
+            return
+
+        def run(widget, card):
+            if not cfg.mayaVersion.value:
+                return
+            try:
+                result = call_maya(
+                    [
+                        "import NemoMaya",
+                        "print(NemoMaya.getFingerprint())",
+                    ]
+                )
+                if not result:
+                    return
+            except subprocess.CalledProcessError:
+                widget.machineID = None
+                card.setContent("Failed to get machine ID")
+                return
+            widget.machineID = result.strip()
+            card.setContent(self.tr("Machine: ") + widget.machineID)
+
+        self.licenseCard.setTitle(
+            self.tr("License") + " | " + self.tr("No License Found")
+        )
+
+        threading.Thread(target=run, args=(self, self.licenseCard)).start()
+
     def checkHubVersion(self):
         def run(widget):
             response = requests.get(
@@ -216,11 +271,53 @@ class SettingsWidget(QFrame):
 
         threading.Thread(target=run, args=(self,)).start()
 
+    def updateSeatLicense(self):
+        if not self.machineID:
+            InfoBar.error(
+                title="Failed to get machine ID",
+                content=self.tr("Machined ID should be generated first"),
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=-1,
+                parent=self,
+            )
+            return
+
+        url = "https://www.nemopuppet.com/api"
+
+        message = {
+            "username": self.loginTuple[0],
+            "password": self.loginTuple[1],
+        }
+        recv = requests.post(url + "/login", data=message)
+        auth = recv.cookies
+
+        data = {"machine": self.machineID}
+        recv = requests.post(
+            "https://www.nemopuppet.com/api/license/seat", params=data, cookies=auth
+        )
+        if not recv.ok:
+            InfoBar.error(
+                title="Failed to get license",
+                content=f"Response({recv.status_code}): {recv.text}",
+                orient=Qt.Horizontal,
+                isClosable=True,
+                position=InfoBarPosition.TOP,
+                duration=-1,
+                parent=self,
+            )
+            return
+
+        license = recv.json()
+        license_path = os.path.expanduser("~/Documents/NemoSeat.lic")
+        with open(license_path, "w") as f:
+            json.dump(license, f, indent=4)
+
+        self.getSeatLicense()
+
     def setup(self):
         self.layout = QVBoxLayout(self)
-
-        spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.layout.addItem(spacer)
 
         self.optionMaya = ComboBoxSettingCard(
             cfg.mayaVersion,
@@ -242,7 +339,7 @@ class SettingsWidget(QFrame):
             FIF.DEVELOPER_TOOLS,
             self.tr("Use nightly beta version"),
             self.tr(
-                "The nightly version is always the latest, but may be unstable. Be sure only using it for testing purpose"
+                "The nightly version is always the latest, but may be unstable. Be sure only using it for test purpose"
             ),
             configItem=cfg.useNightlyVersion,
         )
@@ -286,3 +383,12 @@ class SettingsWidget(QFrame):
 
         spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(spacer)
+
+        self.licenseCard = PrimaryPushSettingCard(
+            self.tr("Activate"),
+            FIF.FINGERPRINT,
+            self.tr("License"),
+            self.tr("Machine: ") + " Unknown",
+        )
+        self.licenseCard.clicked.connect(self.updateSeatLicense)
+        self.layout.addWidget(self.licenseCard)
