@@ -30,7 +30,7 @@ from qfluentwidgets import FluentIcon as FIF
 import requests
 from packaging import version
 
-from app.utils import call_maya
+import app.utils as utils
 from app.config import cfg
 
 
@@ -38,7 +38,7 @@ class SettingsWidget(QFrame):
     def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
         self.loginTuple = loginTuple
-        self.currentHub = version.Version("0.0.8")
+        self.currentHub = version.Version("0.0.9")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
@@ -169,7 +169,7 @@ class SettingsWidget(QFrame):
             if not cfg.mayaVersion.value:
                 return
             try:
-                result = call_maya(
+                result = utils.call_maya(
                     [
                         "import NemoMaya",
                         "print(NemoMaya.get_version())",
@@ -214,7 +214,7 @@ class SettingsWidget(QFrame):
         threading.Thread(target=run, args=(self,)).start()
 
     def getSeatLicense(self):
-        license_path = os.path.expanduser("~/Documents/NemoSeat.lic")
+        license_path = utils.get_license_path()
         if os.path.exists(license_path):
             try:
                 with open(license_path, "r") as f:
@@ -241,7 +241,7 @@ class SettingsWidget(QFrame):
             if not cfg.mayaVersion.value:
                 return
             try:
-                result = call_maya(
+                result = utils.call_maya(
                     [
                         "import NemoMaya",
                         "print(NemoMaya.getFingerprint())",

@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "NemoHub"
-#define MyAppVersion "0.0.8"
+#define MyAppVersion "0.0.9"
 #define MyAppPublisher "NemoPuppet"
 #define MyAppURL "https://www.nemopuppet.com/"
 #define MyAppExeName "NemoHub.exe"

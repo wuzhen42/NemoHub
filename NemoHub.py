@@ -38,7 +38,7 @@ class ClientWindow(FluentWindow):
 
         # create sub interface
         self.easyArea = EasyWidget(loginTuple, self)
-        self.batchArea = Widget("Multiple in batch", self)
+        # self.batchArea = Widget("Multiple in batch", self)
         self.assetsArea = AssetsWidget(self)
         self.settingArea = SettingsWidget(loginTuple, self)
 
@@ -67,7 +67,7 @@ class ClientWindow(FluentWindow):
 
     def initNavigation(self):
         self.addSubInterface(self.easyArea, FIF.SEND, "Easy")
-        self.addSubInterface(self.batchArea, FIF.CALORIES, "Batch")
+        # self.addSubInterface(self.batchArea, FIF.CALORIES, "Batch")
         self.addSubInterface(self.assetsArea, FIF.BOOK_SHELF, "Tasks")
 
         self.addSubInterface(

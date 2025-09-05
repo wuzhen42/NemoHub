@@ -58,7 +58,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
         )
         self.buttonPoster.clicked.connect(
             lambda _: webbrowser.open(
-                "https://jobs.mihoyo.com/m/?recommendationCode=NTAXtp1&isRecommendation=true#/position/2537",
+                "https://www.linkedin.com/company/nemopuppet",
                 new=0,
                 autoraise=True,
             )

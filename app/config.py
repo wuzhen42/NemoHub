@@ -8,6 +8,8 @@ from qfluentwidgets import (
     ConfigSerializer,
 )
 
+import app.utils as utils
+
 
 class MayaVersionSerializer(ConfigSerializer):
     def serialize(self, version):
@@ -42,4 +44,4 @@ class Config(QConfig):
 
 
 cfg = Config()
-qconfig.load("config/config.json", cfg)
+qconfig.load(utils.get_config_file(), cfg)
