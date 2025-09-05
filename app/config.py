@@ -1,14 +1,16 @@
+import platform
+import os
+
 from qfluentwidgets import (
     QConfig,
     qconfig,
     ConfigItem,
     BoolValidator,
+    RangeValidator,
     OptionsConfigItem,
     OptionsValidator,
     ConfigSerializer,
 )
-
-import app.utils as utils
 
 
 class MayaVersionSerializer(ConfigSerializer):
@@ -24,7 +26,7 @@ class Config(QConfig):
         "Convert",
         "MayaVersion",
         None,
-        OptionsValidator([None, 2018, 2019, 2020, 2022, 2023, 2024]),
+        OptionsValidator([None, 2018, 2019, 2020, 2022, 2023, 2024, 2025, 2026]),
     )
 
     checkUpdateAtStartUp = ConfigItem(
@@ -35,6 +37,10 @@ class Config(QConfig):
         "Update", "UseNightlyVersion", False, BoolValidator()
     )
 
+    proxyServerAddress = ConfigItem("Proxy", "ServerAddress", "")
+    proxyServerPort = ConfigItem("Proxy", "ServerPort", 9000, RangeValidator(0, 9999))
+    proxyServerHost = ConfigItem("Proxy", "ServerPort", False, BoolValidator())
+
     convertModernOn = ConfigItem("Convert", "ModernOptionOn", False, BoolValidator())
     convertNativeOn = ConfigItem("Convert", "NativeOptionOn", False, BoolValidator())
     convertDoubleOn = ConfigItem("Convert", "DoubleOptionOn", False, BoolValidator())
@@ -43,5 +49,19 @@ class Config(QConfig):
     convertGpuOn = ConfigItem("Convert", "GpuOptionOn", True, BoolValidator())
 
 
+def get_config_dir():
+    if platform.system() == "Windows":
+        return os.path.join(os.environ["APPDATA"], "Nemo")
+    else:
+        return os.path.join(os.path.expanduser("~"), ".config", "Nemo")
+
+
+def get_config_file():
+    config_dir = get_config_dir()
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    return os.path.join(config_dir, "config.json")
+
+
 cfg = Config()
-qconfig.load(utils.get_config_file(), cfg)
+qconfig.load(get_config_file(), cfg)

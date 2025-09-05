@@ -32,6 +32,7 @@ from packaging import version
 
 import app.utils as utils
 from app.config import cfg
+from app.proxy import ProxySettingsCard
 
 
 class SettingsWidget(QFrame):
@@ -65,11 +66,12 @@ class SettingsWidget(QFrame):
             w = MessageDialog(title, content, parent)
             if w.exec():
                 response = requests.get(
-                    "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest"
+                    "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest",
+                    proxies=utils.get_proxies()
                 ).json()
                 asset = response["assets"][0]
                 url = asset["browser_download_url"]
-                recv = requests.get(url, stream=True)
+                recv = requests.get(url, stream=True, proxies=utils.get_proxies())
                 tmpdir = tempfile.mkdtemp()
                 output_path = "{}/{}".format(tmpdir, asset["name"])
                 with open(output_path, "wb") as f:
@@ -93,12 +95,15 @@ class SettingsWidget(QFrame):
         if not self.currentNemo:
             return
 
-        hasUpdate = (
-            self.nightlyNemo[1] > self.currentNemo[1]
-            if cfg.useNightlyVersion.value
-            else self.currentNemo[0] == "nightly"
-            or self.stableNemo[0] > version.parse(self.currentNemo[0])
-        )
+        hasUpdate = False
+        if cfg.useNightlyVersion.value:
+            if self.nightlyNemo and self.nightlyNemo[1] > self.currentNemo[1]:
+                hasUpdate = True
+        elif self.stableNemo:
+            if self.currentNemo[0] == "nightly":
+                hasUpdate = True
+            elif self.stableNemo[0] > version.parse(self.currentNemo[0]):
+                hasUpdate = True
 
         if hasUpdate:
             title = "New version of NemoMaya dectected"
@@ -128,6 +133,7 @@ class SettingsWidget(QFrame):
                 )
                 recv = requests.get(
                     f"https://www.nemopuppet.com/api/release/{target_version}/maya",
+                    proxies=utils.get_proxies(),
                     stream=True,
                 )
                 tmpdir = tempfile.mkdtemp()
@@ -199,7 +205,7 @@ class SettingsWidget(QFrame):
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
 
         def run(widget):
-            response = requests.get("https://www.nemopuppet.com/api/releases").json()
+            response = requests.get("https://www.nemopuppet.com/api/releases", proxies=utils.get_proxies()).json()
             versions = []
             widget.nightlyNemo = ("None", datetime.date.min)
             for item in response:
@@ -265,7 +271,8 @@ class SettingsWidget(QFrame):
     def checkHubVersion(self):
         def run(widget):
             response = requests.get(
-                "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest"
+                "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest",
+                proxies=utils.get_proxies()
             ).json()
             widget.latestHub = version.parse(response["tag_name"])
 
@@ -290,12 +297,13 @@ class SettingsWidget(QFrame):
             "username": self.loginTuple[0],
             "password": self.loginTuple[1],
         }
-        recv = requests.post(url + "/login", data=message)
+        recv = requests.post(url + "/login", data=message, proxies=utils.get_proxies())
         auth = recv.cookies
 
         data = {"machine": self.machineID}
         recv = requests.post(
-            "https://www.nemopuppet.com/api/license/seat", params=data, cookies=auth
+            "https://www.nemopuppet.com/api/license/seat", params=data, cookies=auth,
+            proxies=utils.get_proxies()
         )
         if not recv.ok:
             InfoBar.error(
@@ -323,7 +331,7 @@ class SettingsWidget(QFrame):
             cfg.mayaVersion,
             FIF.ROBOT,
             "Maya",
-            texts=["", "2018", "2019", "2020", "2022", "2023", "2024"],
+            texts=["", "2018", "2019", "2020", "2022", "2023", "2024", "2025", "2026"],
         )
         self.layout.addWidget(self.optionMaya)
 
@@ -383,6 +391,12 @@ class SettingsWidget(QFrame):
 
         spacer = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
         self.layout.addItem(spacer)
+
+        self.proxyCard = ProxySettingsCard(
+            FIF.CLOUD,
+            self.tr("Proxy"),
+        )
+        self.layout.addWidget(self.proxyCard)
 
         self.licenseCard = PrimaryPushSettingCard(
             self.tr("Activate"),
