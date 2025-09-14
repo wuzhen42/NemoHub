@@ -38,7 +38,7 @@ class SettingsWidget(QFrame):
     def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
         self.loginTuple = loginTuple
-        self.currentHub = version.Version("0.0.9")
+        self.currentHub = version.Version("0.1.0")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
