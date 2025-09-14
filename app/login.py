@@ -69,7 +69,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
-        pixmap = QPixmap(":/images/poster_zzz.jpg").scaled(
+        pixmap = QPixmap(":/images/poster_nzt.jpg").scaled(
             self.buttonPoster.size(),
             Qt.KeepAspectRatioByExpanding,
             Qt.SmoothTransformation,

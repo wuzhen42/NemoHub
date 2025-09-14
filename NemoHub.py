@@ -71,8 +71,8 @@ class ClientWindow(FluentWindow):
         self.addSubInterface(self.easyArea, FIF.SEND, "Easy")
         # self.addSubInterface(self.batchArea, FIF.CALORIES, "Batch")
         self.addSubInterface(self.assetsArea, FIF.BOOK_SHELF, "Tasks")
+        self.addSubInterface(self.licenseArea, FIF.VPN, "License")
 
-        self.addSubInterface(self.licenseArea, FIF.VPN, "License", NavigationItemPosition.BOTTOM)
         self.addSubInterface(self.settingArea, FIF.SETTING, "Settings", NavigationItemPosition.BOTTOM)
 
     def initWindow(self):
