@@ -15,7 +15,7 @@ from app.utils import get_proxies
 
 
 class LoginWindow(FramelessWindow, Ui_Form):
-    loginSuccess = Signal(str, str)
+    loginSuccess = Signal(str, str, requests.cookies.RequestsCookieJar)
 
     def __init__(self):
         super().__init__()
@@ -106,7 +106,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
             error = str(e)
 
         if auth:
-            self.loginSuccess.emit(account, password)
+            self.loginSuccess.emit(account, password, auth)
         else:
             InfoBar.error(
                 title="Login Failed",

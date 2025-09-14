@@ -17,6 +17,7 @@ from app.login import LoginWindow
 from app.easy import EasyWidget
 from app.assets import AssetsWidget
 from app.settings import SettingsWidget
+from app.license import LicenseWidget
 from app.config import cfg
 
 
@@ -41,6 +42,7 @@ class ClientWindow(FluentWindow):
         # self.batchArea = Widget("Multiple in batch", self)
         self.assetsArea = AssetsWidget(self)
         self.settingArea = SettingsWidget(loginTuple, self)
+        self.licenseArea = LicenseWidget(loginTuple, self)
 
         self.initNavigation()
         self.initWindow()
@@ -70,9 +72,8 @@ class ClientWindow(FluentWindow):
         # self.addSubInterface(self.batchArea, FIF.CALORIES, "Batch")
         self.addSubInterface(self.assetsArea, FIF.BOOK_SHELF, "Tasks")
 
-        self.addSubInterface(
-            self.settingArea, FIF.SETTING, "Settings", NavigationItemPosition.BOTTOM
-        )
+        self.addSubInterface(self.licenseArea, FIF.VPN, "License", NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.settingArea, FIF.SETTING, "Settings", NavigationItemPosition.BOTTOM)
 
     def initWindow(self):
         self.resize(900, 700)
@@ -90,8 +91,8 @@ if __name__ == "__main__":
     loginWindow = LoginWindow()
     loginWindow.show()
 
-    def switchToMainWindow(username, password):
-        mainWindow = ClientWindow((username, password))
+    def switchToMainWindow(username, password, auth):
+        mainWindow = ClientWindow((username, password, auth))
         mainWindow.show()
         loginWindow.close()
 
