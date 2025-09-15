@@ -18,7 +18,7 @@ proxy-py = "^2.4.10"
 
 
 [tool.poetry.group.dev.dependencies]
-nuitka = "1.8.6"
+nuitka = "2.7.14"
 
 [build-system]
 requires = ["poetry-core"]
