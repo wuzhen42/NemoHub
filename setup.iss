@@ -10,7 +10,7 @@
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
-AppId={{35A657C1-481E-4591-8370-3D2BD8C703B7}
+AppId={{5842F03E-BE75-4F9A-AD5A-119EAB5A0B9E}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -23,63 +23,25 @@ DisableProgramGroupPage=yes
 LicenseFile=D:\proj\NemoHub\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
+OutputDir=D:\proj\NemoHub\Output
 OutputBaseFilename=NemoHubInstaller
+SetupIconFile=D:\proj\NemoHub\resource\images\logo.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_bz2.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_ctypes.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_decimal.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_hashlib.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_lzma.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_queue.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_socket.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_ssl.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\_zoneinfo.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\concrt140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\libcrypto-3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\libffi-8.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\libssl-3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\msvcp140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\msvcp140_2.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\pyside6.abi3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\python3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\python311.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\pythoncom311.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\pywintypes311.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6core.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6gui.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6network.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6pdf.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6svg.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6svgwidgets.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6widgets.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\qt6xml.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\select.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\shiboken6.abi3.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\unicodedata.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\update.bat"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\vcruntime140_1.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\win32api.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\win32gui.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\win32print.pyd"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\certifi\*"; DestDir: "{app}\certifi"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\charset_normalizer\*"; DestDir: "{app}\charset_normalizer"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\PySide6\*"; DestDir: "{app}\PySide6"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\shiboken6\*"; DestDir: "{app}\shiboken6"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\tzdata\*"; DestDir: "{app}\tzdata"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\zstandard\*"; DestDir: "{app}\zstandard"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "D:\proj\NemoHub\dist\NemoHub\NemoHub.dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
