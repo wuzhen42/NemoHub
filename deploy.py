@@ -21,6 +21,10 @@ args = [
     "--nofollow-import-to=pywin,pycryptodome",
     "--follow-import-to=win32gui,win32print,qfluentwidgets,app",
     "--output-dir=dist/NemoHub",
+    "--company-name=\"GoMore Tech\"",
+    "--product-name=NemoPuppet",
+    "--file-description=\"visit nemopuppet.com\"",
+    "--product-version=1.0.0",
     "NemoHub.py",
 ]
 os.system(" ".join(args))
