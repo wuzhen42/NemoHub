@@ -1,5 +1,4 @@
 import os
-import subprocess
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -63,46 +62,18 @@ class EasyWidget(QFrame):
             cfg.convertNativeOn.value = self.optionNative.isChecked()
             cfg.convertProfileOn.value = self.optionProfile.isChecked()
 
-            mayapy = f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"'
-            args = [
-                self.inputName.text(),
+            new_task(
+                self.loginTuple,
+                self.inputName.text(), 
                 self.inputFile.path,
                 self.outputFolder.path,
-            ]
-            kargs = {
-                "username": self.loginTuple[0],
-                "password": self.loginTuple[1],
-                "double": self.optionDouble.isChecked(),
-                "preview": not self.optionNative.isChecked(),
-                "ctrl_proxy": self.optionModern.isChecked(),
-                "overwrite": self.optionForce.isChecked(),
-                "gpu": self.optionGPU.isChecked(),
-                "restoreProfile": self.optionProfile.isChecked(),
-            }
-
-            def cast(x):
-                return f"'{x}'" if isinstance(x, str) else str(x)
-
-            args = [cast(x) for x in args]
-            kargs = [f"{k}={cast(v)}" for k, v in kargs.items()]
-            func_call = f"convert.process({','.join(args)}, {','.join(kargs)})"
-            command = f"{mayapy} -c \"from maya import standalone; standalone.initialize(name='python'); from nemo.pipeline import convert; {func_call}\""
-            home = os.path.expanduser("~")
-            nemo_extern = f"{home}/Documents/maya/modules/Nemo/extern/"
-
-            env = os.environ.copy()
-            env["PYTHONPATH"] = nemo_extern
-            if cfg.mayaVersion.value < 2022:
-                env["OPENSSL_ia32cap"] = "0x20000000"
-            proc = subprocess.Popen(
-                command,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                cwd=home,
-                env=env,
+                self.optionGPU.isChecked(),
+                self.optionDouble.isChecked(),
+                self.optionForce.isChecked(),
+                self.optionModern.isChecked(),
+                self.optionNative.isChecked(),
+                self.optionProfile.isChecked()
             )
-            new_task(self.inputName.text(), self.outputFolder.path, proc)
         except Exception as e:
             InfoBar.error(
                 title="Create Task Failed",
