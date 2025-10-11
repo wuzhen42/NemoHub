@@ -58,17 +58,16 @@ class AssetsWidget(QFrame):
             return
 
         task = tasks[row]
-        if not task.active():
-            return
-
         task.refresh()
         self.table.setItem(row, 1, QTableWidgetItem(task.status))
         scrollBar = self.log.verticalScrollBar()
-        # scrollToBottom = scrollBar.value() == scrollBar.maximum()
+        old_value = scrollBar.value()
         self.log.setText(task.message)
-        # if scrollToBottom:
         scrollBar = self.log.verticalScrollBar()
-        scrollBar.setValue(scrollBar.maximum())
+        if scrollBar.maximum() - old_value < 30:
+            scrollBar.setValue(scrollBar.maximum())
+        else:
+            scrollBar.setValue(old_value)
 
         if not task.active():
             self.activeTasksChanged.emit(len(active_tasks()))

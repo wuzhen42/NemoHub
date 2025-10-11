@@ -188,7 +188,7 @@ class Task:
                     self.message += f"Downloaded result: {filename}\n"
                     self._start_assemble_phase()
                     break
-                elif task_status == "Failed":
+                elif task_status in ['Error', 'Overtime']:
                     self.status = "Upload Error"
                     self.phase = "Failed"
                     self.message += "Server task failed\n"

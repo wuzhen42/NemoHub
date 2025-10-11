@@ -6,6 +6,7 @@ import tempfile
 import threading
 import shutil
 import zipfile
+import platform
 
 import tzlocal
 from PySide6.QtCore import Qt, QTimer
@@ -141,14 +142,15 @@ class SettingsWidget(QFrame):
                     archive.extractall(tmpdir)
                 os.remove(output_path)
 
-                path_modules = "{}/Documents/maya/modules".format(
-                    os.path.expanduser("~")
-                )
-                target_dir = "{}/Nemo".format(path_modules)
+                if platform.system() == "Windows":
+                    path_modules = f"{os.path.expanduser('~')}/Documents/maya/modules"
+                else:
+                    path_modules = f"{os.path.expanduser('~')}/maya/modules"
+                target_dir = f"{path_modules}/Nemo"
                 if os.path.isdir(target_dir):
                     shutil.rmtree(target_dir)
-                shutil.copytree("{}/Nemo".format(tmpdir), target_dir)
-                shutil.copy("{}/nemo.mod".format(tmpdir), path_modules)
+                shutil.copytree(f"{tmpdir}/Nemo", target_dir)
+                shutil.copy(f"{tmpdir}/nemo.mod", path_modules)
                 InfoBar.success(
                     title="NemoMaya updated",
                     content=f"You can restart maya to try latest features now",
