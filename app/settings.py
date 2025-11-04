@@ -39,7 +39,7 @@ class SettingsWidget(QFrame):
     def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
         self.loginTuple = loginTuple
-        self.currentHub = version.Version("0.1.1")
+        self.currentHub = version.Version("0.1.2")
         self.latestHub = None
         self.currentNemo = None
         self.stableNemo = None
@@ -63,15 +63,13 @@ class SettingsWidget(QFrame):
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
             if w.exec():
-                response = requests.get(
-                    "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest",
-                    proxies=utils.get_proxies()
-                ).json()
-                asset = response["assets"][0]
-                url = asset["browser_download_url"]
-                recv = requests.get(url, stream=True, proxies=utils.get_proxies())
+                recv = requests.get(
+                    f"https://nemopuppet.com/api/nemohub/{self.latestHub}/windows",
+                    proxies=utils.get_proxies(),
+                    stream=True
+                )
                 tmpdir = tempfile.mkdtemp()
-                output_path = "{}/{}".format(tmpdir, asset["name"])
+                output_path = "{}/NemoHub.zip".format(tmpdir)
                 with open(output_path, "wb") as f:
                     shutil.copyfileobj(recv.raw, f)
                 with zipfile.ZipFile(output_path, allowZip64=True) as archive:
@@ -204,7 +202,7 @@ class SettingsWidget(QFrame):
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
 
         def run(widget):
-            response = requests.get("https://www.nemopuppet.com/api/releases", proxies=utils.get_proxies()).json()
+            response = requests.get("https://nemopuppet.com/api/releases", proxies=utils.get_proxies()).json()
             versions = []
             widget.nightlyNemo = ("None", datetime.date.min)
             for item in response:
@@ -221,10 +219,10 @@ class SettingsWidget(QFrame):
     def checkHubVersion(self):
         def run(widget):
             response = requests.get(
-                "https://api.github.com/repos/wuzhen42/NemoHub/releases/latest",
+                "https://nemopuppet.com/api/latest/nemohub",
                 proxies=utils.get_proxies()
             ).json()
-            widget.latestHub = version.parse(response["tag_name"])
+            widget.latestHub = version.parse(response["version"])
 
         threading.Thread(target=run, args=(self,)).start()
 
