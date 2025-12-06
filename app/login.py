@@ -12,6 +12,7 @@ from qfluentwidgets import setThemeColor, SplitTitleBar, InfoBar, InfoBarPositio
 from ui_loginwindow import Ui_Form
 
 from app.utils import get_proxies
+from app.config import get_api_domain
 
 
 class LoginWindow(FramelessWindow, Ui_Form):
@@ -55,7 +56,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
 
         self.buttonFindPassword.clicked.connect(
             lambda: webbrowser.open(
-                "https://www.nemopuppet.com/login", new=0, autoraise=True
+                f"https://www.{get_api_domain()}/login", new=0, autoraise=True
             )
         )
         self.buttonPoster.clicked.connect(
@@ -96,7 +97,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
             self.save_settings()
 
             recv = requests.post(
-                "https://www.nemopuppet.com/api/login",
+                f"https://www.{get_api_domain()}/api/login",
                 data={"username": account, "password": password},
                 proxies=get_proxies()
             )

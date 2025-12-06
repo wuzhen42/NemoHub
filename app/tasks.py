@@ -9,7 +9,7 @@ import time
 
 import requests
 
-from app.config import cfg
+from app.config import cfg, get_api_domain
 
 class Task:
     def __init__(self, loginTuple, name, filepath, folder, gpu, double, force, modern, native, profile):
@@ -150,7 +150,7 @@ class Task:
         self.uploadThread.start()
 
     def _upload_worker(self):
-        url = "https://www.nemopuppet.com/api"
+        url = f"https://www.{get_api_domain()}/api"
 
         try:
             message = {

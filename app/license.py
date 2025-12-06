@@ -14,14 +14,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
 
 import app.utils as utils
-from app.config import cfg
+from app.config import cfg, get_api_domain
 
 
 class LicenseWidget(QFrame):
     def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
         self.loginTuple = loginTuple
-        self.url = "https://www.nemopuppet.com/api"
+        self.url = f"https://www.{get_api_domain()}/api"
 
         self.seats = []
         self.seatData = None
@@ -154,7 +154,7 @@ class LicenseWidget(QFrame):
 
         data = {"hostname": self.hostName, "machine": self.machineID, "seat": seat['id']}
         recv = requests.post(
-            "https://www.nemopuppet.com/api/license/seat/activate", params=data, cookies=self.loginTuple[2],
+            f"https://www.{get_api_domain()}/api/license/seat/activate", params=data, cookies=self.loginTuple[2],
             proxies=utils.get_proxies()
         )
         if not recv.ok:
@@ -183,7 +183,7 @@ class LicenseWidget(QFrame):
             os.remove(license_path)
         seat_id = self.seatData['seat_id']
         requests.post(
-            "https://www.nemopuppet.com/api/license/seat/deactivate", params={"seat": seat_id}, cookies=self.loginTuple[2],
+            f"https://www.{get_api_domain()}/api/license/seat/deactivate", params={"seat": seat_id}, cookies=self.loginTuple[2],
             proxies=utils.get_proxies()
         )
         self.getSeatLicense()
@@ -192,7 +192,7 @@ class LicenseWidget(QFrame):
     def refreshSeatLicense(self):
         seat_id = self.seatData['seat_id']
         recv = requests.post(
-            "https://www.nemopuppet.com/api/license/seat/refresh", params={"seat": seat_id}, cookies=self.loginTuple[2],
+            f"https://www.{get_api_domain()}/api/license/seat/refresh", params={"seat": seat_id}, cookies=self.loginTuple[2],
             proxies=utils.get_proxies()
         )
         if not recv.ok:

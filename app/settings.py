@@ -31,7 +31,7 @@ import requests
 from packaging import version
 
 import app.utils as utils
-from app.config import cfg
+from app.config import cfg, get_api_domain
 from app.proxy import ProxySettingsCard
 
 
@@ -65,7 +65,7 @@ class SettingsWidget(QFrame):
             w = MessageDialog(title, content, parent)
             if w.exec():
                 recv = requests.get(
-                    f"https://nemopuppet.com/api/nemohub/{self.latestHub}/windows",
+                    f"https://{get_api_domain()}/api/nemohub/{self.latestHub}/windows",
                     proxies=utils.get_proxies(),
                     stream=True
                 )
@@ -129,7 +129,7 @@ class SettingsWidget(QFrame):
                     else str(self.stableNemo[0])
                 )
                 recv = requests.get(
-                    f"https://www.nemopuppet.com/api/release/{target_version}/maya",
+                    f"https://www.{get_api_domain()}/api/release/{target_version}/maya",
                     proxies=utils.get_proxies(),
                     stream=True,
                 )
@@ -203,7 +203,7 @@ class SettingsWidget(QFrame):
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
 
         def run(widget):
-            response = requests.get("https://nemopuppet.com/api/releases", proxies=utils.get_proxies()).json()
+            response = requests.get(f"https://{get_api_domain()}/api/releases", proxies=utils.get_proxies()).json()
             versions = []
             widget.nightlyNemo = ("None", datetime.date.min)
             for item in response:
@@ -220,7 +220,7 @@ class SettingsWidget(QFrame):
     def checkHubVersion(self):
         def run(widget):
             response = requests.get(
-                "https://nemopuppet.com/api/latest/nemohub",
+                f"https://{get_api_domain()}/api/latest/nemohub",
                 proxies=utils.get_proxies()
             ).json()
             widget.latestHub = version.parse(response["version"])
@@ -257,7 +257,7 @@ class SettingsWidget(QFrame):
         self.layout.addWidget(self.switchUseNightly)
 
         self.helpCard = HyperlinkCard(
-            "https://docs.nemopuppet.com",
+            f"https://docs.nemopuppet.com",
             self.tr("Document"),
             FIF.HELP,
             self.tr("Help"),
@@ -266,7 +266,7 @@ class SettingsWidget(QFrame):
         self.layout.addWidget(self.helpCard)
 
         self.feedbackCard = HyperlinkCard(
-            "https://www.nemopuppet.com/download",
+            f"https://www.{get_api_domain()}/download",
             self.tr("Feedback"),
             FIF.FEEDBACK,
             self.tr("Provide feedback"),

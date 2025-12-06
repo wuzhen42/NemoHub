@@ -1,5 +1,6 @@
 import platform
 import os
+import locale
 
 from qfluentwidgets import (
     QConfig,
@@ -61,6 +62,21 @@ def get_config_file():
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
     return os.path.join(config_dir, "config.json")
+
+
+def get_api_domain():
+    """
+    Get the appropriate API domain based on system language.
+    Returns 'nemopuppet.cn' for China Mainland users (zh_CN), 'nemopuppet.com' otherwise.
+    """
+    try:
+        lang, encoding = locale.getdefaultlocale()
+        if lang == 'zh_CN':
+            return "nemopuppet.cn"
+    except:
+        pass
+
+    return "nemopuppet.com"
 
 
 cfg = Config()
