@@ -52,7 +52,7 @@ class LicenseWidget(QFrame):
                 widget.machineID = None
                 card.setContent("Failed to get machine ID")
                 return
-            widget.machineID = result.strip()
+            widget.machineID = result.splitlines()[-1].strip()
             card.setContent(self.tr("Machine: ") + widget.machineID)
 
         thread = threading.Thread(target=run, args=(self, self.licenseCard))
