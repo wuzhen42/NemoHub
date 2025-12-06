@@ -21,6 +21,7 @@ class AssetsWidget(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
         self.setObjectName("Tasks Farm")
+        self.last_active_count = 0
 
         self.setup()
 
@@ -31,11 +32,11 @@ class AssetsWidget(QFrame):
     def getStatusColor(self, status):
         """Return background color based on task status"""
         if status == "Success":
-            return QColor(220, 247, 220)  # Very light green
+            return QColor(144, 238, 144)  # Light green
         elif "Error" in status or "Failed" in status:
-            return QColor(255, 220, 220)  # Very light red
+            return QColor(255, 182, 193)  # Light red
         elif "Running" in status or status == "Waiting":
-            return QColor(255, 252, 220)  # Very light yellow
+            return QColor(255, 255, 153)  # Light yellow
         else:
             return None  # Default (no color)
 
@@ -64,45 +65,45 @@ class AssetsWidget(QFrame):
     def onRefresh(self):
         self.refreshTable()
 
+        for i, task in enumerate(tasks):
+            if task.active():
+                task.refresh()
+                status_item = self.table.item(i, 1)
+                if status_item:
+                    status_item.setText(task.status)
+                color = self.getStatusColor(task.status)
+                for col in range(self.table.columnCount()):
+                    item = self.table.item(i, col)
+                    if item and color:
+                        item.setBackground(color)
+        self.table.resizeColumnsToContents()
+
+        current_active = len(active_tasks())
+        if self.last_active_count != current_active:
+            self.last_active_count = current_active
+            self.activeTasksChanged.emit(current_active)
+
+        # Update log view only for the currently selected task
         row = self.table.currentRow()
         if row < 0:
             return
 
         task = tasks[row]
-        task.refresh()
 
-        # Update status and apply background color
-        color = self.getStatusColor(task.status)
-        status_item = QTableWidgetItem(task.status)
-        if color:
-            status_item.setBackground(color)
-            for col in range(self.table.columnCount()):
-                item = self.table.item(row, col)
-                if item:
-                    item.setBackground(color)
-        self.table.setItem(row, 1, status_item)
-
-        # Store scroll position and determine if user is at bottom
         scrollBar = self.log.verticalScrollBar()
         old_value = scrollBar.value()
         old_max = scrollBar.maximum()
         was_at_bottom = (old_value >= old_max - 10) if old_max > 0 else True
 
-        # Only update text if it changed
         if self.log.toPlainText() != task.message:
             self.log.setText(task.message)
 
-            # Auto-scroll only if user was already at bottom
             if was_at_bottom:
                 scrollBar = self.log.verticalScrollBar()
                 scrollBar.setValue(scrollBar.maximum())
             else:
-                # Try to maintain relative position
                 scrollBar = self.log.verticalScrollBar()
                 scrollBar.setValue(old_value)
-
-        if not task.active():
-            self.activeTasksChanged.emit(len(active_tasks()))
 
     def refreshTable(self):
         currRowCount = self.table.rowCount()
@@ -113,20 +114,9 @@ class AssetsWidget(QFrame):
         self.table.setRowCount(len(tasks))
         for i in range(currRowCount, len(tasks)):
             task = tasks[i]
-            name_item = QTableWidgetItem(task.name)
-            status_item = QTableWidgetItem(task.status)
-            folder_item = QTableWidgetItem(task.folder)
-
-            # Apply background color based on status
-            color = self.getStatusColor(task.status)
-            if color:
-                name_item.setBackground(color)
-                status_item.setBackground(color)
-                folder_item.setBackground(color)
-
-            self.table.setItem(i, 0, name_item)
-            self.table.setItem(i, 1, status_item)
-            self.table.setItem(i, 2, folder_item)
+            self.table.setItem(i, 0, QTableWidgetItem(task.name))
+            self.table.setItem(i, 1, QTableWidgetItem(task.status))
+            self.table.setItem(i, 2, QTableWidgetItem(task.folder))
         self.table.resizeColumnsToContents()
 
     def setup(self):
