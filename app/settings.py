@@ -49,7 +49,8 @@ class SettingsWidget(QFrame):
         self.setObjectName("Settings")
         self.setup()
         if cfg.checkUpdateAtStartUp.value:
-            self.checkHubVersion()
+            if platform.system() == "Windows":
+                self.checkHubVersion()
             self.checkNemoVersion()
 
         self.timer = QTimer(self)
