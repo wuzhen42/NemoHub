@@ -30,6 +30,9 @@ class Config(QConfig):
         OptionsValidator([None, 2018, 2019, 2020, 2022, 2023, 2024, 2025, 2026]),
     )
 
+    mayapyPath = ConfigItem("Convert", "MayaPythonPath", "")
+    nemoModulePath = ConfigItem("Convert", "NemoModulePath", "")
+
     checkUpdateAtStartUp = ConfigItem(
         "Update", "CheckUpdateAtStartUp", True, BoolValidator()
     )

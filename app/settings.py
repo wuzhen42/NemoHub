@@ -16,11 +16,14 @@ from PySide6.QtWidgets import (
     QSpacerItem,
     QSizePolicy,
     QApplication,
+    QFileDialog,
 )
 from qfluentwidgets import (
+    qconfig,
     ComboBoxSettingCard,
     SwitchSettingCard,
     HyperlinkCard,
+    PushSettingCard,
     PrimaryPushSettingCard,
     MessageDialog,
     InfoBar,
@@ -227,6 +230,27 @@ class SettingsWidget(QFrame):
 
         threading.Thread(target=run, args=(self,)).start()
 
+    def browseMayaPython(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Browse mayapy", cfg.mayapyPath.value, "Executable Files (*.exe);;All Files (*)"
+        )
+        self.mayapyCard.setContent(path)
+        qconfig.set(cfg.mayapyPath, path)
+
+    def onMayaVersionChanged(self, text):
+        if self.mayaVersionStr and cfg.mayapyPath.value:
+            path = cfg.mayapyPath.value.replace(self.mayaVersionStr, text)
+            self.mayapyCard.setContent(path)
+            qconfig.set(cfg.mayapyPath, path)
+        self.mayaVersionStr = text
+
+    def browseNemoModule(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Browse Nemo Module", cfg.nemoModulePath.value, "Maya Module Files (*.mod);;All Files (*)"
+        )
+        self.nemoModuleCard.setContent(path)
+        qconfig.set(cfg.nemoModulePath, path)
+
     def setup(self):
         self.layout = QVBoxLayout(self)
 
@@ -236,7 +260,17 @@ class SettingsWidget(QFrame):
             "Maya",
             texts=["", "2018", "2019", "2020", "2022", "2023", "2024", "2025", "2026"],
         )
+        self.mayaVersionStr = str(cfg.mayaVersion.value)
+        self.optionMaya.comboBox.currentTextChanged.connect(self.onMayaVersionChanged)
         self.layout.addWidget(self.optionMaya)
+        self.mayapyCard = PushSettingCard(
+            self.tr("Browse"),
+            FIF.FLAG,
+            self.tr("Maya Python Path"),
+            cfg.mayapyPath.value
+        )
+        self.mayapyCard.clicked.connect(self.browseMayaPython)
+        self.layout.addWidget(self.mayapyCard)
 
         self.switchAutoUpdate = SwitchSettingCard(
             FIF.UPDATE,
@@ -256,24 +290,6 @@ class SettingsWidget(QFrame):
         )
         self.layout.addWidget(self.switchUseNightly)
 
-        self.helpCard = HyperlinkCard(
-            f"https://docs.nemopuppet.com",
-            self.tr("Document"),
-            FIF.HELP,
-            self.tr("Help"),
-            self.tr("Discover new features and learn useful tips about Nemo"),
-        )
-        self.layout.addWidget(self.helpCard)
-
-        self.feedbackCard = HyperlinkCard(
-            f"https://www.{get_api_domain()}/download",
-            self.tr("Feedback"),
-            FIF.FEEDBACK,
-            self.tr("Provide feedback"),
-            self.tr("Help us improve Nemo by providing feedback"),
-        )
-        self.layout.addWidget(self.feedbackCard)
-
         self.nemoCard = PrimaryPushSettingCard(
             self.tr("Check Update"),
             FIF.INFO,
@@ -282,6 +298,15 @@ class SettingsWidget(QFrame):
         )
         self.nemoCard.clicked.connect(self.checkNemoVersion)
         self.layout.addWidget(self.nemoCard)
+
+        self.nemoModuleCard = PushSettingCard(
+            self.tr("Browse"),
+            FIF.EDIT,
+            self.tr("Nemo Module Path"),
+            cfg.nemoModulePath.value
+        )
+        self.nemoModuleCard.clicked.connect(self.browseNemoModule)
+        self.layout.addWidget(self.nemoModuleCard)
 
         self.hubCard = HyperlinkCard(
             "https://github.com/wuzhen42/NemoHub",

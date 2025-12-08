@@ -32,10 +32,10 @@ class Task:
 
     def executeMayapy(self, command):
         if platform.system() == "Windows":
-            mayapy = f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"'
+            mayapy = f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"' if not cfg.mayapyPath.value else cfg.mayapyPath.value
             command = f"{mayapy} -c \"from maya import standalone; standalone.initialize(); from nemo.pipeline import convert; {command}; standalone.uninitialize()\""
         else:
-            mayapy = f"/usr/autodesk/maya{cfg.mayaVersion.value}/bin/mayapy"
+            mayapy = f"/usr/autodesk/maya{cfg.mayaVersion.value}/bin/mayapy" if not cfg.mayapyPath.value else cfg.mayapyPath.value
             command = [
                 mayapy,
                 "-c",
@@ -43,6 +43,9 @@ class Task:
             ]
 
         env = os.environ.copy()
+        if cfg.nemoModulePath.value:
+            env["MAYA_MODULE_PATH"] = os.path.dirname(cfg.nemoModulePath.value) + os.pathsep + env.get("MAYA_MODULE_PATH", "")
+
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,

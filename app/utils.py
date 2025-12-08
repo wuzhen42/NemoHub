@@ -15,17 +15,20 @@ def call_maya(sentences):
         return
     if platform.system() == "Windows":
         mayapy = (
-            f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"'
+            f'"C:/Program Files/Autodesk/maya{cfg.mayaVersion.value}/bin/mayapy.exe"' if not cfg.mayapyPath.value else cfg.mayapyPath.value
         )
         command = f"{mayapy} -c \"from maya import standalone; standalone.initialize(); {';'.join(sentences)}; standalone.uninitialize()\""
     else:
-        mayapy = f"/usr/autodesk/maya{cfg.mayaVersion.value}/bin/mayapy"
+        mayapy = f"/usr/autodesk/maya{cfg.mayaVersion.value}/bin/mayapy" if not cfg.mayapyPath.value else cfg.mayapyPath.value
         command = [
             mayapy,
             "-c",
             f"from maya import standalone; standalone.initialize(); {';'.join(sentences)}; standalone.uninitialize()",
         ]
-    return subprocess.check_output(command).strip().decode()
+    env = os.environ.copy()
+    if cfg.nemoModulePath.value:
+        env["MAYA_MODULE_PATH"] = os.path.dirname(cfg.nemoModulePath.value) + os.pathsep + env.get("MAYA_MODULE_PATH", "")
+    return subprocess.check_output(command, env=env).strip().decode()
 
 
 def get_license_path():
