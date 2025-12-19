@@ -36,11 +36,12 @@ def get_license_path():
 
 
 def get_proxies():
-    if qconfig.get(cfg.proxyServerHost):
+    if qconfig.get(cfg.proxyServerAddress):
         URL = (
             f"{qconfig.get(cfg.proxyServerAddress)}:{qconfig.get(cfg.proxyServerPort)}"
         )
         result = urlparse(URL)
-        if result.scheme and result.netloc:
-            return {"http": URL, "https": URL}
+        if not result.scheme or not result.netloc:
+            print(f"Proxy {URL} invalid! Please check the proxy host or clear your proxy settings.")
+        return {"http": URL, "https": URL}
     return dict()

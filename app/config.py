@@ -43,7 +43,6 @@ class Config(QConfig):
 
     proxyServerAddress = ConfigItem("Proxy", "ServerAddress", "")
     proxyServerPort = ConfigItem("Proxy", "ServerPort", 9000, RangeValidator(0, 9999))
-    proxyServerHost = ConfigItem("Proxy", "ServerPort", False, BoolValidator())
 
     convertModernOn = ConfigItem("Convert", "ModernOptionOn", False, BoolValidator())
     convertNativeOn = ConfigItem("Convert", "NativeOptionOn", False, BoolValidator())

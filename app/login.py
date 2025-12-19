@@ -7,12 +7,14 @@ from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QApplication
 
 from qframelesswindow import FramelessWindow
-from qfluentwidgets import setThemeColor, SplitTitleBar, InfoBar, InfoBarPosition
+from qfluentwidgets import setThemeColor, SplitTitleBar, InfoBar, InfoBarPosition, PushButton
+from qfluentwidgets import FluentIcon as FIF
 
 from ui_loginwindow import Ui_Form
 
 from app.utils import get_proxies
 from app.config import get_api_domain
+from app.proxy import ProxyDialog
 
 
 class LoginWindow(FramelessWindow, Ui_Form):
@@ -54,6 +56,13 @@ class LoginWindow(FramelessWindow, Ui_Form):
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
+        # Add proxy button before "Reset Password" link
+        self.buttonProxy = PushButton(FIF.CLOUD, "Proxy Settings", self.widget)
+        self.verticalLayout_2.insertWidget(
+            self.verticalLayout_2.indexOf(self.buttonFindPassword),
+            self.buttonProxy
+        )
+
         self.buttonFindPassword.clicked.connect(
             lambda: webbrowser.open(
                 f"https://www.{get_api_domain()}/login", new=0, autoraise=True
@@ -67,6 +76,7 @@ class LoginWindow(FramelessWindow, Ui_Form):
             )
         )
         self.buttonLogin.clicked.connect(self.submit)
+        self.buttonProxy.clicked.connect(self.showProxyDialog)
 
     def resizeEvent(self, e):
         super().resizeEvent(e)
@@ -88,6 +98,10 @@ class LoginWindow(FramelessWindow, Ui_Form):
         self.settings.setValue("account", self.inputAccount.text())
         if self.checkSavePassword.isChecked():
             self.settings.setValue("password", self.inputPassword.text())
+
+    def showProxyDialog(self):
+        dialog = ProxyDialog(self)
+        dialog.exec()
 
     def submit(self):
         auth = None

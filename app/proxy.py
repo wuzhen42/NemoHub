@@ -1,10 +1,10 @@
 import threading
 from proxy import entry_point
 import sys
-import os
 import signal
 import socket
 
+from PySide6.QtWidgets import QLabel
 from qfluentwidgets import (
     qconfig,
     TogglePushButton,
@@ -12,7 +12,10 @@ from qfluentwidgets import (
     LineEdit,
     DisplayLabel,
     SettingCard,
+    MessageBox,
+    PushButton,
 )
+from qfluentwidgets import FluentIcon as FIF
 
 from app.config import cfg
 
@@ -165,3 +168,62 @@ class ProxyManager:
     def is_running(self):
         """Check if proxy is running"""
         return self.running and self.proxy_thread and self.proxy_thread.is_alive()
+
+
+class ProxyDialog(MessageBox):
+    def __init__(self, parent=None):
+        super().__init__("Web Proxy Settings", "", parent)
+
+        self.originalAddress = qconfig.get(cfg.proxyServerAddress)
+        self.originalPort = qconfig.get(cfg.proxyServerPort)
+
+        self.addressInput = LineEdit()
+        self.addressInput.setClearButtonEnabled(True)
+        self.addressInput.setMinimumWidth(200)
+        self.addressInput.setText(self.originalAddress)
+        self.textLayout.addWidget(QLabel('Proxy Server: '))
+        self.textLayout.addWidget(self.addressInput)
+
+        self.portInput = CompactSpinBox()
+        self.portInput.setMinimum(0)
+        self.portInput.setMaximum(9999)
+        self.portInput.setValue(self.originalPort)
+        self.textLayout.addWidget(QLabel('Port: '))
+        self.textLayout.addWidget(self.portInput)
+
+        # Add clear button
+        self.clearButton = PushButton(FIF.DELETE, "Clear Proxy")
+        self.clearButton.clicked.connect(self.clearProxy)
+        self.textLayout.addWidget(self.clearButton)
+
+        self.proxyManager = ProxyManager()
+
+    def clearProxy(self):
+        """Clear proxy address and reset port to 0"""
+        self.addressInput.clear()
+        self.portInput.setValue(9000)
+
+    def accept(self):
+        """Called when user clicks OK - save the settings"""
+        qconfig.set(cfg.proxyServerAddress, self.addressInput.text())
+        qconfig.set(cfg.proxyServerPort, self.portInput.value())
+        super().accept()
+
+    def reject(self):
+        """Called when user clicks Cancel - revert to original values"""
+        qconfig.set(cfg.proxyServerAddress, self.originalAddress)
+        qconfig.set(cfg.proxyServerPort, self.originalPort)
+        super().reject()
+
+    def toggleHost(self, host):
+        self.addressInput.setDisabled(host)
+        self.portInput.setDisabled(host)
+        if host:
+            ip = get_local_ip()
+            if ip:
+                self.addressInput.setText('http://' + ip)
+            else:
+                self.addressInput.clear()
+            self.proxyManager.start_proxy(self.portInput.value())
+        else:
+            self.proxyManager.stop_proxy()
