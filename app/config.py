@@ -72,7 +72,7 @@ def get_api_domain():
     Returns 'nemopuppet.cn' for China Mainland users (zh_CN), 'nemopuppet.com' otherwise.
     """
     try:
-        lang, encoding = locale.getdefaultlocale()
+        lang, encoding = locale.getlocale()
         if lang == 'zh_CN':
             return "nemopuppet.cn"
     except:

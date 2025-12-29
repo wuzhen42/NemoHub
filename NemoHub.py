@@ -1,6 +1,5 @@
 import sys
 import os
-import locale
 
 from PySide6.QtCore import QTranslator, QLocale, QLibraryInfo
 from PySide6.QtGui import QIcon
@@ -25,7 +24,6 @@ class ClientWindow(FluentWindow):
     def __init__(self, loginTuple):
         super().__init__()
 
-        # create sub interface
         self.easyArea = EasyWidget(loginTuple, self)
         self.assetsArea = AssetsWidget(self)
         self.settingArea = SettingsWidget(loginTuple, self)
@@ -73,19 +71,11 @@ class ClientWindow(FluentWindow):
 
 def load_translations(app):
     """Load translation files based on system locale"""
-    # Get system locale
-    try:
-        lang, encoding = locale.getdefaultlocale()
-        if lang:
-            locale_name = lang  # e.g., 'zh_CN', 'en_US'
-        else:
-            locale_name = QLocale.system().name()  # fallback to Qt's locale detection
-    except:
-        locale_name = QLocale.system().name()
+    # Get system locale using Qt's locale detection (more reliable for Qt apps)
+    locale_name = QLocale.system().name()  # e.g., 'zh_CN', 'en_US'
 
     print(f"Detected locale: {locale_name}")
 
-    # Load application translations
     app_translator = QTranslator(app)
     translations_dir = os.path.join(os.path.dirname(__file__), "translations")
     qm_file = os.path.join(translations_dir, f"nemohub_{locale_name}.qm")
@@ -97,7 +87,7 @@ def load_translations(app):
         else:
             print(f"✗ Failed to load translation file: {qm_file}")
     else:
-        print(f"Translation file not found: {qm_file}, using default language")
+        print(f"Translation file not found: {qm_file}, using default language(English)")
 
     # Also load Qt base translations for standard dialogs
     qt_translator = QTranslator(app)
@@ -112,7 +102,6 @@ def load_translations(app):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
-    # Load translations
     translator = load_translations(app)
 
     loginWindow = LoginWindow()
@@ -124,8 +113,6 @@ if __name__ == "__main__":
         loginWindow.close()
 
     loginWindow.loginSuccess.connect(switchToMainWindow)
-    # mainWindow = ClientWindow((None, None))
-    # mainWindow.show()
 
     app.exec()
     cfg.save()
