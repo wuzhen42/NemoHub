@@ -27,7 +27,6 @@ source_files = [
 # Language codes we support
 languages = [
     "zh_CN",  # Simplified Chinese
-    "en_US",  # English (for reference)
 ]
 
 def update_translations():

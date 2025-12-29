@@ -9,3 +9,5 @@ config/
 Output/
 
 poetry.lock
+
+translations/*.qm

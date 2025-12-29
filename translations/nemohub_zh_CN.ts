@@ -42,10 +42,6 @@
 <context>
     <name>ClientWindow</name>
     <message>
-        <source>Easy</source>
-        <translation type="vanished">转换</translation>
-    </message>
-    <message>
         <location filename="../NemoHub.py" line="58"/>
         <source>Convert</source>
         <translation>转换</translation>
@@ -107,14 +103,6 @@
         <translation>您现在可以启动另一个转换，或者到任务界面查看</translation>
     </message>
     <message>
-        <source>File: </source>
-        <translation type="vanished">原始文件: </translation>
-    </message>
-    <message>
-        <source>Folder:</source>
-        <translation type="vanished">输出文件夹:</translation>
-    </message>
-    <message>
         <location filename="../app/easy.py" line="138"/>
         <source>Original File: </source>
         <translation>原始文件: </translation>
@@ -128,30 +116,6 @@
         <location filename="../app/easy.py" line="177"/>
         <source>Name: </source>
         <translation>资产名: </translation>
-    </message>
-    <message>
-        <source>double</source>
-        <translation type="vanished">double</translation>
-    </message>
-    <message>
-        <source>force</source>
-        <translation type="vanished">force</translation>
-    </message>
-    <message>
-        <source>gpu</source>
-        <translation type="vanished">gpu</translation>
-    </message>
-    <message>
-        <source>native</source>
-        <translation type="vanished">native</translation>
-    </message>
-    <message>
-        <source>modern</source>
-        <translation type="vanished">modern</translation>
-    </message>
-    <message>
-        <source>profile</source>
-        <translation type="vanished">profile</translation>
     </message>
     <message>
         <location filename="../app/easy.py" line="220"/>
@@ -173,14 +137,6 @@
         <location filename="../app/license.py" line="343"/>
         <source>License</source>
         <translation>证书</translation>
-    </message>
-    <message>
-        <source>Expires at </source>
-        <translation type="vanished">过期于 </translation>
-    </message>
-    <message>
-        <source>Pause in {} days</source>
-        <translation type="vanished">{}天内暂停</translation>
     </message>
     <message>
         <location filename="../app/license.py" line="124"/>
@@ -322,10 +278,6 @@
         <location filename="../app/license.py" line="353"/>
         <source>Pack</source>
         <translation>类别</translation>
-    </message>
-    <message>
-        <source>Months</source>
-        <translation type="vanished">剩余月份</translation>
     </message>
     <message>
         <location filename="../app/license.py" line="353"/>
@@ -617,10 +569,6 @@ NOTICE: all maya instances using Nemo should be closed before update.</source>
 </context>
 <context>
     <name>widget</name>
-    <message>
-        <source>Version: {version} Date:{date}</source>
-        <translation type="obsolete">Version: {version} Date:{date}</translation>
-    </message>
     <message>
         <location filename="../app/license.py" line="56"/>
         <source>Failed to get machine ID</source>
