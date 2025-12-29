@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QGridLayout,
 )
+from PySide6.QtGui import QFontMetrics
 from qfluentwidgets import (
     StrongBodyLabel,
     LineEdit,
@@ -25,12 +26,36 @@ from app.config import cfg
 from app.tasks import new_task
 
 
+class ElidedLabel(BodyLabel):
+    """Label that elides text from the left (beginning) when too long"""
+
+    def __init__(self, text="", parent=None):
+        super().__init__(parent)
+        self._fullText = text
+        self.setWordWrap(False)
+        self.setText(text)
+
+    def setText(self, text):
+        self._fullText = text
+        self._updateElidedText()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._updateElidedText()
+
+    def _updateElidedText(self):
+        metrics = QFontMetrics(self.font())
+        elided = metrics.elidedText(self._fullText, Qt.ElideLeft, self.width())
+        super().setText(elided)
+
+
 class EasyWidget(QFrame):
     def __init__(self, loginTuple, parent=None):
         super().__init__(parent=parent)
 
         self.loginTuple = loginTuple
-        self.setObjectName("Easy Convert")
+        self.setObjectName("Convert")
+
 
         self.setup()
         self.inputFile.setExtensions(["ma", "mb"])
@@ -41,7 +66,6 @@ class EasyWidget(QFrame):
         self.optionForce.setChecked(cfg.convertForceOn.value)
         self.optionModern.setChecked(cfg.convertModernOn.value)
         self.optionNative.setChecked(cfg.convertNativeOn.value)
-        self.optionProfile.setChecked(cfg.convertProfileOn.value)
         self.buttonSubmit.clicked.connect(self.submit)
 
     def setInputPath(self, path):
@@ -54,17 +78,16 @@ class EasyWidget(QFrame):
     def submit(self):
         try:
             if not cfg.mayaVersion.value:
-                raise RuntimeError("Must select maya version first in Settings")
+                raise RuntimeError(self.tr("Must select maya version first in Settings"))
             cfg.convertGpuOn.value = self.optionGPU.isChecked()
             cfg.convertDoubleOn.value = self.optionDouble.isChecked()
             cfg.convertForceOn.value = self.optionForce.isChecked()
             cfg.convertModernOn.value = self.optionModern.isChecked()
             cfg.convertNativeOn.value = self.optionNative.isChecked()
-            cfg.convertProfileOn.value = self.optionProfile.isChecked()
 
             new_task(
                 self.loginTuple,
-                self.inputName.text(), 
+                self.inputName.text(),
                 self.inputFile.path,
                 self.outputFolder.path,
                 self.optionGPU.isChecked(),
@@ -72,11 +95,11 @@ class EasyWidget(QFrame):
                 self.optionForce.isChecked(),
                 self.optionModern.isChecked(),
                 self.optionNative.isChecked(),
-                self.optionProfile.isChecked()
+                False
             )
         except Exception as e:
             InfoBar.error(
-                title="Create Task Failed",
+                title=self.tr("Create Task Failed"),
                 content=str(e),
                 orient=Qt.Horizontal,
                 isClosable=True,
@@ -86,8 +109,8 @@ class EasyWidget(QFrame):
             )
         else:
             InfoBar.info(
-                title="Task started",
-                content=f"You can process another asset now or check tasks in Assets page",
+                title=self.tr("Task started"),
+                content=self.tr("You can process another asset now or check tasks in Assets page"),
                 orient=Qt.Horizontal,
                 isClosable=False,
                 position=InfoBarPosition.TOP,
@@ -112,13 +135,12 @@ class EasyWidget(QFrame):
         subLayout = QHBoxLayout()
         spacer = QSpacerItem(60, 2, QSizePolicy.Fixed, QSizePolicy.Minimum)
         subLayout.addItem(spacer)
-        prefixFile = StrongBodyLabel("File: ")
-        prefixFile.setFixedWidth(30)
+        prefixFile = StrongBodyLabel(self.tr("Original File: "))
         subLayout.addWidget(prefixFile)
-        self.textFile = BodyLabel("")
-        self.textFile.setMaximumWidth(310 - 30)
-        subLayout.addWidget(self.textFile)
-        spacer = QSpacerItem(20, 2, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.textFile = ElidedLabel("")
+        self.textFile.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        subLayout.addWidget(self.textFile, 1)
+        spacer = QSpacerItem(20, 2, QSizePolicy.Fixed, QSizePolicy.Minimum)
         subLayout.addItem(spacer)
         dropFileLayout.addLayout(subLayout)
         dropLayout.addLayout(dropFileLayout)
@@ -131,15 +153,14 @@ class EasyWidget(QFrame):
         dropFolderLayout.addLayout(subLayout)
 
         subLayout = QHBoxLayout()
-        spacer = QSpacerItem(60, 2, QSizePolicy.Fixed, QSizePolicy.Minimum)
+        spacer = QSpacerItem(60, 2, QSizePolicy.Fixed, QSizePolicy.Fixed)
         subLayout.addItem(spacer)
-        prefixFolder = StrongBodyLabel("Folder:")
-        prefixFolder.setFixedWidth(45)
+        prefixFolder = StrongBodyLabel(self.tr("Output Folder:"))
         subLayout.addWidget(prefixFolder)
-        self.textFolder = BodyLabel("")
-        self.textFolder.setMaximumWidth(310 - 45)
-        subLayout.addWidget(self.textFolder)
-        spacer = QSpacerItem(20, 2, QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.textFolder = ElidedLabel("")
+        self.textFolder.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        subLayout.addWidget(self.textFolder, 1)
+        spacer = QSpacerItem(20, 2, QSizePolicy.Fixed, QSizePolicy.Minimum)
         subLayout.addItem(spacer)
         dropFolderLayout.addLayout(subLayout)
         dropLayout.addLayout(dropFolderLayout)
@@ -153,7 +174,7 @@ class EasyWidget(QFrame):
         subLayout.setAlignment(Qt.AlignCenter)
         spacer = QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum)
         subLayout.addItem(spacer)
-        labelName = BodyLabel("Name: ")
+        labelName = BodyLabel(self.tr("Name: "))
         subLayout.addWidget(labelName)
         self.inputName = LineEdit()
         self.inputName.setMaximumWidth(300)
@@ -171,8 +192,7 @@ class EasyWidget(QFrame):
         self.optionForce = PillPushButton("force")
         self.optionGPU = PillPushButton("gpu")
         self.optionNative = PillPushButton("native")
-        self.optionModern = PillPushButton("modern")
-        self.optionProfile = PillPushButton("profile")
+        self.optionModern = PillPushButton("turbo")
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, 0
         )
@@ -187,7 +207,6 @@ class EasyWidget(QFrame):
         )
         subLayout.addWidget(self.optionNative, 1, 1)
         subLayout.addWidget(self.optionModern, 1, 2)
-        subLayout.addWidget(self.optionProfile, 1, 3)
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 4
         )
@@ -198,7 +217,7 @@ class EasyWidget(QFrame):
 
         subLayout = QHBoxLayout()
         subLayout.setAlignment(Qt.AlignCenter)
-        self.buttonSubmit = PushButton(FIF.SEND, "GO")
+        self.buttonSubmit = PushButton(FIF.SEND, self.tr("GO"))
         subLayout.addWidget(self.buttonSubmit)
         self.layout.addLayout(subLayout)
 

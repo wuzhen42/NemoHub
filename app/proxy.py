@@ -17,6 +17,8 @@ from qfluentwidgets import (
 )
 from qfluentwidgets import FluentIcon as FIF
 
+from PySide6.QtCore import QCoreApplication
+
 from app.config import cfg
 
 
@@ -28,17 +30,17 @@ class ProxySettingsCard(SettingCard):
         self.addressInput.setClearButtonEnabled(True)
         self.addressInput.setMinimumWidth(200)
         self.addressInput.setText(qconfig.get(cfg.proxyServerAddress))
-        self.hBoxLayout.addWidget(DisplayLabel('Proxy Server: '))
+        self.hBoxLayout.addWidget(DisplayLabel(self.tr('Proxy Server: ')))
         self.hBoxLayout.addWidget(self.addressInput)
 
         self.portInput = CompactSpinBox()
         self.portInput.setMinimum(0)
         self.portInput.setMaximum(9999)
         self.portInput.setValue(qconfig.get(cfg.proxyServerPort))
-        self.hBoxLayout.addWidget(DisplayLabel('Port: '))
+        self.hBoxLayout.addWidget(DisplayLabel(self.tr('Port: ')))
         self.hBoxLayout.addWidget(self.portInput)
 
-        self.hostToggle = TogglePushButton("Host here")
+        self.hostToggle = TogglePushButton(self.tr("Host here"))
         self.hBoxLayout.addWidget(self.hostToggle)
         self.hBoxLayout.setSpacing(5)
 
@@ -172,7 +174,7 @@ class ProxyManager:
 
 class ProxyDialog(MessageBox):
     def __init__(self, parent=None):
-        super().__init__("Web Proxy Settings", "", parent)
+        super().__init__(QCoreApplication.translate("ProxyDialog", "Web Proxy Settings"), "", parent)
 
         self.originalAddress = qconfig.get(cfg.proxyServerAddress)
         self.originalPort = qconfig.get(cfg.proxyServerPort)
@@ -181,18 +183,18 @@ class ProxyDialog(MessageBox):
         self.addressInput.setClearButtonEnabled(True)
         self.addressInput.setMinimumWidth(200)
         self.addressInput.setText(self.originalAddress)
-        self.textLayout.addWidget(QLabel('Proxy Server: '))
+        self.textLayout.addWidget(QLabel(QCoreApplication.translate("ProxyDialog", 'Proxy Server: ')))
         self.textLayout.addWidget(self.addressInput)
 
         self.portInput = CompactSpinBox()
         self.portInput.setMinimum(0)
         self.portInput.setMaximum(9999)
         self.portInput.setValue(self.originalPort)
-        self.textLayout.addWidget(QLabel('Port: '))
+        self.textLayout.addWidget(QLabel(QCoreApplication.translate("ProxyDialog", 'Port: ')))
         self.textLayout.addWidget(self.portInput)
 
         # Add clear button
-        self.clearButton = PushButton(FIF.DELETE, "Clear Proxy")
+        self.clearButton = PushButton(FIF.DELETE, QCoreApplication.translate("ProxyDialog", "Clear Proxy"))
         self.clearButton.clicked.connect(self.clearProxy)
         self.textLayout.addWidget(self.clearButton)
 

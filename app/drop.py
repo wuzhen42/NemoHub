@@ -4,7 +4,7 @@ import subprocess
 
 from PySide6.QtCore import Qt, QSize, QMargins, Signal
 from PySide6.QtGui import QPainter
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QSizePolicy
 from qfluentwidgets import ToolButton
 from qfluentwidgets import FluentIcon as FIF
 
@@ -16,8 +16,9 @@ class DropFileButton(ToolButton):
         super().__init__(parent)
 
         self.setIconSize(QSize(48, 48))
-        self.setFixedSize(300, 200)
-        self.setStyleSheet("border: 2px dashed;")
+        self.setMinimumSize(300, 200)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setStyleSheet("border: 2px dashed; margin-left:60px; margin-right:60px;")
         self.setAcceptDrops(True)
 
         if acceptFile:
@@ -36,9 +37,9 @@ class DropFileButton(ToolButton):
 
     def composeTooltip(self):
         if self.acceptFolder:
-            text = "Click or Drop Folder here"
+            text = self.tr("Click to select or Drop Folder here")
         else:
-            text = "Click or Drop ma/mb File here"
+            text = self.tr("Click to select or Drop ma/mb File here")
         return text
 
     def openFile(self):

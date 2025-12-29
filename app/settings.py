@@ -62,8 +62,8 @@ class SettingsWidget(QFrame):
 
     def onCheckUpdate(self):
         if self.latestHub and self.latestHub > self.currentHub:
-            title = "New version of NemoHub dectected"
-            content = f"Current version of NemoHub is {self.currentHub}. The latest version is {self.latestHub}, Do you want to update?"
+            title = self.tr("New version of NemoHub detected")
+            content = self.tr("Current version of NemoHub is {current}. The latest version is {latest}, Do you want to update?").format(current=self.currentHub, latest=self.latestHub)
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
             if w.exec():
@@ -106,22 +106,22 @@ class SettingsWidget(QFrame):
                 hasUpdate = True
 
         if hasUpdate:
-            title = "New version of NemoMaya dectected"
+            title = self.tr("New version of NemoMaya detected")
             if cfg.useNightlyVersion.value:
                 currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
                 latestDate = self.nightlyNemo[1].strftime("%Y-%m-%d")
                 if self.currentNemo[0] == "v0.0.0":
-                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest nightly version is released at {latestDate}."
+                    message = self.tr("NemoMaya seems not installed on your machine yet.\nThe latest nightly version is released at {date}.").format(date=latestDate)
                 elif self.currentNemo[0] == "nightly":
-                    message = f"Current version of NemoMaya is releasd at {currentDate}.\nThe latest nightly version is released at {latestDate}."
+                    message = self.tr("Current version of NemoMaya is released at {current}.\nThe latest nightly version is released at {latest}.").format(current=currentDate, latest=latestDate)
                 else:
-                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest nightly version is released at {latestDate}."
+                    message = self.tr("Current version of NemoMaya is {version}.\nThe latest nightly version is released at {date}.").format(version=self.currentNemo[0], date=latestDate)
             else:
                 if self.currentNemo[0] == "v0.0.0":
-                    message = f"NemoMaya seems not installed on your machine yet.\nThe latest stable version is {self.stableNemo[0]}."
+                    message = self.tr("NemoMaya seems not installed on your machine yet.\nThe latest stable version is {version}.").format(version=self.stableNemo[0])
                 else:
-                    message = f"Current version of NemoMaya is {self.currentNemo[0]}.\nThe latest stable version is {self.stableNemo[0]}."
-            content = f"{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
+                    message = self.tr("Current version of NemoMaya is {current}.\nThe latest stable version is {latest}.").format(current=self.currentNemo[0], latest=self.stableNemo[0])
+            content = self.tr("{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update.").format(message=message)
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
 
@@ -154,8 +154,8 @@ class SettingsWidget(QFrame):
                 shutil.copytree(f"{tmpdir}/Nemo", target_dir)
                 shutil.copy(f"{tmpdir}/nemo.mod", path_modules)
                 InfoBar.success(
-                    title="NemoMaya updated",
-                    content=f"You can restart maya to try latest features now",
+                    title=self.tr("NemoMaya updated"),
+                    content=self.tr("You can restart maya to try latest features now"),
                     orient=Qt.Horizontal,
                     isClosable=True,
                     position=InfoBarPosition.TOP,
@@ -201,7 +201,7 @@ class SettingsWidget(QFrame):
             )
             ts = ts.astimezone(tzlocal.get_localzone())
             widget.currentNemo = (version, ts.date())
-            card.setContent(f"Version: {version} Date:{ts.strftime('%Y-%m-%d %I:%M')}")
+            card.setContent("Version: {version} Date:{date}".format(version=version, date=ts.strftime('%Y-%m-%d %I:%M')))
 
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
 
@@ -232,21 +232,24 @@ class SettingsWidget(QFrame):
 
     def browseMayaPython(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Browse mayapy", cfg.mayapyPath.value, "Executable Files (*.exe);;All Files (*)"
+            self, self.tr("Browse mayapy"), cfg.mayapyPath.value, self.tr("Executable Files (*.exe);;All Files (*)")
         )
         self.mayapyCard.setContent(path)
         qconfig.set(cfg.mayapyPath, path)
 
     def onMayaVersionChanged(self, text):
         if self.mayaVersionStr and cfg.mayapyPath.value:
-            path = cfg.mayapyPath.value.replace(self.mayaVersionStr, text)
+            if not text:
+                path = ""
+            else:
+                path = cfg.mayapyPath.value.replace(self.mayaVersionStr, text)
             self.mayapyCard.setContent(path)
             qconfig.set(cfg.mayapyPath, path)
         self.mayaVersionStr = text
 
     def browseNemoModule(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, "Browse Nemo Module", cfg.nemoModulePath.value, "Maya Module Files (*.mod);;All Files (*)"
+            self, self.tr("Browse Nemo Module"), cfg.nemoModulePath.value, self.tr("Maya Module Files (*.mod);;All Files (*)")
         )
         self.nemoModuleCard.setContent(path)
         qconfig.set(cfg.nemoModulePath, path)
@@ -257,7 +260,7 @@ class SettingsWidget(QFrame):
         self.optionMaya = ComboBoxSettingCard(
             cfg.mayaVersion,
             FIF.ROBOT,
-            "Maya",
+            self.tr("Maya"),
             texts=["", "2018", "2019", "2020", "2022", "2023", "2024", "2025", "2026"],
         )
         self.mayaVersionStr = str(cfg.mayaVersion.value)

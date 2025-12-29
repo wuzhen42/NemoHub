@@ -53,10 +53,10 @@ class LicenseWidget(QFrame):
                     return
             except subprocess.CalledProcessError:
                 widget.machineID = None
-                card.setContent("Failed to get machine ID")
+                card.setContent(widget.tr("Failed to get machine ID"))
                 return
             widget.machineID = result.splitlines()[-1].strip()
-            card.setContent(self.tr("Machine: ") + widget.machineID)
+            card.setContent(widget.tr("Machine: ") + widget.machineID)
 
         thread = threading.Thread(target=run, args=(self, self.licenseCard))
         thread.start()
@@ -110,10 +110,10 @@ class LicenseWidget(QFrame):
             self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
             title = self.tr("License")
             ts = expires.astimezone(tzlocal.get_localzone())
-            title += " | " + self.tr("Expires at ") + ts.strftime("%Y-%m-%d")
+            title += " | " + self.tr("Expires at {date}").format(date=ts.strftime("%Y-%m-%d"))
             to_renew = self.get_next_renew_date(self.seatData)
             remaining_days = max(0, (to_renew - datetime.datetime.now()).days)
-            title += " | " + self.tr("Pause in {} days".format(remaining_days))
+            title += " | " + self.tr("Pause in {days} days").format(days=remaining_days)
             self.licenseCard.setTitle(title)
             self.deactivateEnabled = True
             if refresh + datetime.timedelta(days=25) < datetime.datetime.now():
@@ -126,7 +126,7 @@ class LicenseWidget(QFrame):
     def activateSeatLicense(self):
         if not self.machineID:
             InfoBar.error(
-                title="Failed to get machine ID",
+                title=self.tr("Failed to get machine ID"),
                 content=self.tr("Machine ID should be generated first"),
                 orient=Qt.Horizontal,
                 isClosable=True,
@@ -138,7 +138,7 @@ class LicenseWidget(QFrame):
 
         if self.tableSeats.selectedItems() == []:
             InfoBar.error(
-                title="No Seat Selected",
+                title=self.tr("No Seat Selected"),
                 content=self.tr("Please select a seat first"),
                 orient=Qt.Horizontal,
                 isClosable=True,
@@ -151,7 +151,7 @@ class LicenseWidget(QFrame):
         seat = self.seats[self.tableSeats.selectedItems()[0].row()]
         if seat['hostname']:
             InfoBar.error(
-                title="Seat Already Taken",
+                title=self.tr("Seat Already Taken"),
                 content=self.tr("This seat has been activated on another machine."),
                 orient=Qt.Horizontal,
                 isClosable=True,
@@ -166,11 +166,11 @@ class LicenseWidget(QFrame):
         to_renew = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime("%Y-%m-%d")
         content = self.tr(
             "You are about to activate a license on this machine.<br><br>"
-            f"This will consume 1 month from your balance (Currently: {remaining_months} months)<br>"
+            "This will consume 1 month from your balance (Currently: {months} months)<br>"
             "The license will be valid for one calendar month on this machine only.<br>"
-            f"You will need to manually refresh it around {to_renew} to continue using it.<br>"
+            "You will need to manually refresh it around {date} to continue using it.<br>"
             "Do you want to continue?"
-        )
+        ).format(months=remaining_months, date=to_renew)
 
         parent = self.window()
         dialog = MessageDialog(title, content, parent)
@@ -185,8 +185,8 @@ class LicenseWidget(QFrame):
         )
         if not recv.ok:
             InfoBar.error(
-                title="Failed to get license",
-                content=f"Response({recv.status_code}): {recv.text}",
+                title=self.tr("Failed to get license"),
+                content=self.tr("Response({code}): {text}").format(code=recv.status_code, text=recv.text),
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -202,7 +202,7 @@ class LicenseWidget(QFrame):
 
         InfoBar.success(
             title=self.tr("License Activated"),
-            content=self.tr(f"License activated successfully! Valid for 30 days."),
+            content=self.tr("License activated successfully! Valid for one month."),
             orient=Qt.Horizontal,
             isClosable=True,
             position=InfoBarPosition.TOP,
@@ -218,15 +218,15 @@ class LicenseWidget(QFrame):
         expires = datetime.datetime.fromtimestamp(self.seatData["to_renew_at"])
         remaining_days = max(0, (expires - datetime.datetime.now()).days)
 
-        content = (
-            f"<b>IMPORTANT: Deactivating will permanently lose your remaining days!</b><br><br>"
-            f"<b>You have {remaining_days} days remaining in this license period.</b><br><br>"
-            f"• These days will NOT be refunded to your account<br>"
-            f"• Activating on another machine will consume a new month from your balance<br><br>"
-            f"This action is designed to prevent license abuse. Only deactivate if you're "
-            f"permanently moving to a different machine.<br><br>"
-            f"Are you sure you want to continue?"
-        )
+        content = self.tr(
+            "<b>IMPORTANT: Deactivating will permanently lose your remaining days!</b><br><br>"
+            "<b>You have {days} days remaining in this license period.</b><br><br>"
+            "• These days will NOT be refunded to your account<br>"
+            "• Activating on another machine will consume a new month from your balance<br><br>"
+            "This action is designed to prevent license abuse. Only deactivate if you're "
+            "permanently moving to a different machine.<br><br>"
+            "Are you sure you want to continue?"
+        ).format(days=remaining_days)
 
         # Get parent window for dialog
         parent = self.window()
@@ -253,10 +253,10 @@ class LicenseWidget(QFrame):
         to_renew = self.get_next_renew_date(self.seatData).strftime("%Y-%m-%d")
         content = self.tr(
             "Refreshing extends your license for one calendar month and <b>consumes 1 month from your account balance.<b><br>"
-            f"You must manually refresh your license around {to_renew} to continue using it.<br>"
+            "You must manually refresh your license around {date} to continue using it.<br>"
             "If you don't refresh, the license will pause and billing will stop.<br>"
             "Do you want to continue?"
-        )
+        ).format(date=to_renew)
 
         parent = self.window()
         dialog = MessageDialog(title, content, parent)
@@ -271,8 +271,8 @@ class LicenseWidget(QFrame):
         )
         if not recv.ok:
             InfoBar.error(
-                title="Failed to refresh license",
-                content=f"Response({recv.status_code}): {recv.text}",
+                title=self.tr("Failed to refresh license"),
+                content=self.tr("Response({code}): {text}").format(code=recv.status_code, text=recv.text),
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.TOP,
@@ -350,7 +350,7 @@ class LicenseWidget(QFrame):
         self.tableSeats.setWordWrap(False)
         self.tableSeats.verticalHeader().hide()
         self.tableSeats.setColumnCount(7)
-        self.tableSeats.setHorizontalHeaderLabels(["Name", "Product", "Pack", "Months", "Refresh At", "Expires At", "Machine"])
+        self.tableSeats.setHorizontalHeaderLabels([self.tr("Name"), self.tr("Product"), self.tr("Pack"), self.tr("Remaining Months"), self.tr("Refreshed At"), self.tr("Expires At"), self.tr("Machine")])
         self.tableSeats.itemSelectionChanged.connect(self.updateLicenseCard)
         self.layout.addWidget(self.tableSeats)
 

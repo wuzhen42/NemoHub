@@ -14,7 +14,7 @@ from app.config import cfg, get_api_domain
 class Task:
     def __init__(self, loginTuple, name, filepath, folder, gpu, double, force, modern, native, profile):
         self.phase = "Wait"
-        self.status = "Waiting"
+        self.status = "Task"
         self.message = ""
         self.queue = queue.Queue()
         self.threadPipe = None
@@ -86,7 +86,7 @@ class Task:
                 output = self.proc.communicate()[0]
                 if output:
                     newContent += (
-                        f"\n\n================={self.phase} Output=================\n" + output
+                        "\n\n=================" + self.phase + " Output=================\n" + output
                     )
 
                 exitCode = self.proc.returncode
@@ -101,7 +101,7 @@ class Task:
                         self.status = "Success"
                         self.close()
                 else:
-                    self.status = f"{self.phase} Error"
+                    self.status = "{phase} {error}".format(phase=self.phase, error="Error")
                     self.phase = "Failed"
                     self.close()
 
@@ -137,18 +137,18 @@ class Task:
         }
 
         def cast(x):
-            return f"'{x}'" if isinstance(x, str) else str(x)
+            return "'{x}'".format(x=x) if isinstance(x, str) else str(x)
 
         args = [cast(x) for x in args]
-        kargs = [f"{k}={cast(v)}" for k, v in kargs.items()]
-        func_call = f"convert.export({','.join(args)}, {','.join(kargs)})"
+        kargs = ["{k}={v}".format(k=k, v=cast(v)) for k, v in kargs.items()]
+        func_call = "convert.export({args}, {kargs})".format(args=','.join(args), kargs=','.join(kargs))
         self.proc = self.executeMayapy(func_call)
 
     def _start_upload_phase(self):
         self.phase = "Upload"
         self.status = "Upload Running"
         self.message += "\n\n=====================Starting Upload Phase=====================\n"
-        
+
         self.uploadThread = threading.Thread(target=self._upload_worker)
         self.uploadThread.start()
 
@@ -168,52 +168,51 @@ class Task:
             message = {'platform': platform.system(), 'gpu': self.gpu}
             recv = requests.post(url + '/tasks', data=message, files=files, cookies=auth)
             farm_task_id = recv.json()['id']
-            
-            self.message += f"Upload initiated with task ID: {farm_task_id}\n"
-            
+
+            self.message += "Upload initiated with task ID: {id}".format(id=farm_task_id) + "\n"
+
             elapsed_counter = 0
             while True:
                 time.sleep(30)
-                
-                recv = requests.get(url + f'/task/{farm_task_id}', cookies=auth)
+
+                recv = requests.get(url + '/task/{id}'.format(id=farm_task_id), cookies=auth)
                 task_status = recv.json()['status']
-                
+
                 if task_status == "Success":
-                    self.message += "Server processing completed, downloading result...\n"
-                    
+                    self.message += "Server processing completed, downloading result..." + "\n"
+
                     # Download the result file
-                    recv = requests.get(url + f'/artifact/{farm_task_id}', stream=True, cookies=auth)
+                    recv = requests.get(url + '/artifact/{id}'.format(id=farm_task_id), stream=True, cookies=auth)
                     filename = re.findall('filename=\"(.+)\"', recv.headers['content-disposition'])[0]
-                    output_path = f'{self.folder}/{filename}'
+                    output_path = '{folder}/{filename}'.format(folder=self.folder, filename=filename)
                     with open(output_path, 'wb') as f:
                         shutil.copyfileobj(recv.raw, f)
-                    
-                    self.message += f"Downloaded result: {filename}\n"
+
+                    self.message += "Downloaded result: {filename}".format(filename=filename) + "\n"
                     self._start_assemble_phase()
                     break
                 elif task_status in ['Error', 'Overtime']:
                     self.status = "Upload Error"
                     self.phase = "Failed"
-                    self.message += "Server task failed\n"
+                    self.message += "Server task failed" + "\n"
                     break
                 else:
                     elapsed_counter += 1
-                    self.message += f"Task status: {task_status}, {elapsed_counter * 0.5} minutes elapsed. \n"
+                    self.message += "Task status: {status}, {minutes} minutes elapsed.".format(status=task_status, minutes=elapsed_counter * 0.5) + " \n"
         except Exception as e:
             self.status = "Upload Error"
             self.phase = "Failed"
-            self.message += f"Upload failed: {str(e)}\n"
-
+            self.message += "Upload failed: {error}".format(error=str(e)) + "\n"
         
     def _start_assemble_phase(self):
         self.phase = "Assemble"
         self.status = "Assemble Running"
         self.message += "\n\n=====================Starting Assemble Phase=====================\n"
-        
+
         args = [
-            f"{self.folder}/{self.name}__EXPORT.zip",
-            f"{self.folder}/{self.name}__BINARY.zip",
-            f"{self.folder}/maya"
+            "{folder}/{name}__EXPORT.zip".format(folder=self.folder, name=self.name),
+            "{folder}/{name}__BINARY.zip".format(folder=self.folder, name=self.name),
+            "{folder}/maya".format(folder=self.folder)
         ]
         kargs = {
             "preview": not self.native,
@@ -221,11 +220,11 @@ class Task:
         }
 
         def cast(x):
-            return f"'{x}'" if isinstance(x, str) else str(x)
+            return "'{x}'".format(x=x) if isinstance(x, str) else str(x)
 
         args = [cast(x) for x in args]
-        kargs = [f"{k}={cast(v)}" for k, v in kargs.items()]
-        func_call = f"convert.assemble({','.join(args)}, {','.join(kargs)})"
+        kargs = ["{k}={v}".format(k=k, v=cast(v)) for k, v in kargs.items()]
+        func_call = "convert.assemble({args}, {kargs})".format(args=','.join(args), kargs=','.join(kargs))
         self.proc = self.executeMayapy(func_call)
 
 

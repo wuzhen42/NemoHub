@@ -1,13 +1,13 @@
 import sys
+import os
+import locale
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QTranslator, QLocale, QLibraryInfo
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QFrame, QHBoxLayout
+from PySide6.QtWidgets import QApplication
 from qfluentwidgets import (
     NavigationItemPosition,
     FluentWindow,
-    SubtitleLabel,
-    setFont,
     InfoBadge,
     InfoBadgePosition,
 )
@@ -21,25 +21,12 @@ from app.license import LicenseWidget
 from app.config import cfg
 
 
-class Widget(QFrame):
-    def __init__(self, text: str, parent=None):
-        super().__init__(parent=parent)
-        self.label = SubtitleLabel(text, self)
-        self.hBoxLayout = QHBoxLayout(self)
-
-        setFont(self.label, 24)
-        self.label.setAlignment(Qt.AlignCenter)
-        self.hBoxLayout.addWidget(self.label, 1, Qt.AlignCenter)
-        self.setObjectName(text.replace(" ", "-"))
-
-
 class ClientWindow(FluentWindow):
     def __init__(self, loginTuple):
         super().__init__()
 
         # create sub interface
         self.easyArea = EasyWidget(loginTuple, self)
-        # self.batchArea = Widget("Multiple in batch", self)
         self.assetsArea = AssetsWidget(self)
         self.settingArea = SettingsWidget(loginTuple, self)
         self.licenseArea = LicenseWidget(loginTuple, self)
@@ -68,25 +55,65 @@ class ClientWindow(FluentWindow):
             self.taskBadge.setText(str(count))
 
     def initNavigation(self):
-        self.addSubInterface(self.easyArea, FIF.SEND, "Easy")
-        # self.addSubInterface(self.batchArea, FIF.CALORIES, "Batch")
-        self.addSubInterface(self.assetsArea, FIF.BOOK_SHELF, "Tasks")
-        self.addSubInterface(self.licenseArea, FIF.VPN, "License")
+        self.addSubInterface(self.easyArea, FIF.SEND, self.tr("Convert"))
+        self.addSubInterface(self.assetsArea, FIF.BOOK_SHELF, self.tr("Tasks"))
+        self.addSubInterface(self.licenseArea, FIF.VPN, self.tr("License"))
 
-        self.addSubInterface(self.settingArea, FIF.SETTING, "Settings", NavigationItemPosition.BOTTOM)
+        self.addSubInterface(self.settingArea, FIF.SETTING, self.tr("Settings"), NavigationItemPosition.BOTTOM)
 
     def initWindow(self):
         self.resize(900, 700)
         self.setWindowIcon(QIcon(":/images/logo.png"))
-        self.setWindowTitle("Nemo Hub")
+        self.setWindowTitle(self.tr("Nemo Hub"))
 
         desktop = QApplication.screens()[0].availableGeometry()
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
 
+def load_translations(app):
+    """Load translation files based on system locale"""
+    # Get system locale
+    try:
+        lang, encoding = locale.getdefaultlocale()
+        if lang:
+            locale_name = lang  # e.g., 'zh_CN', 'en_US'
+        else:
+            locale_name = QLocale.system().name()  # fallback to Qt's locale detection
+    except:
+        locale_name = QLocale.system().name()
+
+    print(f"Detected locale: {locale_name}")
+
+    # Load application translations
+    app_translator = QTranslator(app)
+    translations_dir = os.path.join(os.path.dirname(__file__), "translations")
+    qm_file = os.path.join(translations_dir, f"nemohub_{locale_name}.qm")
+
+    if os.path.exists(qm_file):
+        if app_translator.load(qm_file):
+            app.installTranslator(app_translator)
+            print(f"✓ Loaded NemoHub translation: {locale_name}")
+        else:
+            print(f"✗ Failed to load translation file: {qm_file}")
+    else:
+        print(f"Translation file not found: {qm_file}, using default language")
+
+    # Also load Qt base translations for standard dialogs
+    qt_translator = QTranslator(app)
+    qt_translations_loaded = qt_translator.load(f"qt_{locale_name}", QLibraryInfo.path(QLibraryInfo.TranslationsPath))
+    if qt_translations_loaded:
+        app.installTranslator(qt_translator)
+        print(f"✓ Loaded Qt base translations")
+
+    return app_translator if os.path.exists(qm_file) else None
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # Load translations
+    translator = load_translations(app)
 
     loginWindow = LoginWindow()
     loginWindow.show()
