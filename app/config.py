@@ -41,6 +41,7 @@ class Config(QConfig):
         "Update", "UseNightlyVersion", False, BoolValidator()
     )
 
+    proxyIsHost = ConfigItem("Proxy", "IsHost", False, BoolValidator())
     proxyServerAddress = ConfigItem("Proxy", "ServerAddress", "")
     proxyServerPort = ConfigItem("Proxy", "ServerPort", 9000, RangeValidator(0, 9999))
 

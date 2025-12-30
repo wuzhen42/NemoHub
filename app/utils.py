@@ -36,7 +36,7 @@ def get_license_path():
 
 
 def get_proxies():
-    if qconfig.get(cfg.proxyServerAddress):
+    if not qconfig.get(cfg.proxyIsHost) and qconfig.get(cfg.proxyServerAddress):
         URL = (
             f"{qconfig.get(cfg.proxyServerAddress)}:{qconfig.get(cfg.proxyServerPort)}"
         )

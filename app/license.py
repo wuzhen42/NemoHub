@@ -6,9 +6,8 @@ import threading
 import socket
 
 import requests
-import tzlocal
 
-from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageDialog
+from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageDialog, PrimaryPushSettingCard
 from qfluentwidgets import FluentIcon as FIF
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
@@ -71,14 +70,14 @@ class LicenseWidget(QFrame):
             self.tableSeats.setItem(i, 0, QTableWidgetItem(seat['hostname']))
             self.tableSeats.setItem(i, 1, QTableWidgetItem(str(seat['product'])))
             self.tableSeats.setItem(i, 2, QTableWidgetItem(str(seat['pack'])))
-            self.tableSeats.setItem(i, 3, QTableWidgetItem(str(seat['months'])))
+            self.tableSeats.setItem(i, 3, QTableWidgetItem(self.tr('{} Months').format(seat['months'])))
             if seat['refresh_at']:
                 time = datetime.datetime.fromisoformat(seat['refresh_at'])
                 self.tableSeats.setItem(i, 4, QTableWidgetItem(str(time.date())))
             else:
                 self.tableSeats.setItem(i, 4, QTableWidgetItem('N/A'))
-            if seat['expired_at']:
-                time = datetime.datetime.fromisoformat(seat['expired_at'])
+            if seat['to_renew_at']:
+                time = datetime.datetime.fromisoformat(seat['to_renew_at'])
                 self.tableSeats.setItem(i, 5, QTableWidgetItem(str(time.date())))
             else:
                 self.tableSeats.setItem(i, 5, QTableWidgetItem('N/A'))
@@ -95,7 +94,7 @@ class LicenseWidget(QFrame):
 
     def getSeatLicense(self):
         self.seatData = None
-        expires = None
+        to_renew = None
 
         license_path = utils.get_license_path()
         if os.path.exists(license_path):
@@ -103,20 +102,16 @@ class LicenseWidget(QFrame):
                 data = json.loads(json.load(f)["message"])
                 if data["machine"] == self.machineID:
                     self.seatData = data
-                    refresh = datetime.datetime.fromtimestamp(data["refresh_at"])
-                    expires = datetime.datetime.fromtimestamp(data["expires_at"])
+                    to_renew = self.get_next_renew_date(self.seatData)
 
-        if expires:
+        if to_renew:
             self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
             title = self.tr("License")
-            ts = expires.astimezone(tzlocal.get_localzone())
-            title += " | " + self.tr("Expires at {date}").format(date=ts.strftime("%Y-%m-%d"))
-            to_renew = self.get_next_renew_date(self.seatData)
             remaining_days = max(0, (to_renew - datetime.datetime.now()).days)
             title += " | " + self.tr("Pause in {days} days").format(days=remaining_days)
             self.licenseCard.setTitle(title)
             self.deactivateEnabled = True
-            if refresh + datetime.timedelta(days=25) < datetime.datetime.now():
+            if to_renew - datetime.timedelta(days=5) < datetime.datetime.now():
                 self.refreshEnabled = True
             else:
                 self.refreshEnabled = False
@@ -215,8 +210,8 @@ class LicenseWidget(QFrame):
 
     def deactivateSeatLicense(self):
         title = self.tr("Deactivate License - Warning")
-        expires = datetime.datetime.fromtimestamp(self.seatData["to_renew_at"])
-        remaining_days = max(0, (expires - datetime.datetime.now()).days)
+        to_renew = datetime.datetime.fromtimestamp(self.seatData["to_renew_at"])
+        remaining_days = max(0, (to_renew - datetime.datetime.now()).days)
 
         content = self.tr(
             "<b>IMPORTANT: Deactivating will permanently lose your remaining days!</b><br><br>"
@@ -307,8 +302,7 @@ class LicenseWidget(QFrame):
             else:
                 self.buttonActivate.setEnabled(True)
         else:
-            itemMachine = items[-1]
-            if str(self.seatData['machine']) == itemMachine.text():
+            if items and str(self.seatData['machine']) == items[-1].text():
                 if self.refreshEnabled:
                     self.buttonRefresh.setEnabled(True)
                 if self.deactivateEnabled:
@@ -316,6 +310,14 @@ class LicenseWidget(QFrame):
             else:
                 self.buttonRefresh.setEnabled(False)
                 self.buttonDeactivate.setEnabled(False)
+
+    def showLicenseFileInFolder(self):
+        license_path = utils.get_license_path()
+        if os.path.exists(license_path):
+            if os.name == 'nt':
+                os.startfile(os.path.dirname(license_path))
+            elif os.name == 'posix':
+                subprocess.Popen(['xdg-open', os.path.dirname(license_path)])
 
     def setup(self):
         self.layout = QVBoxLayout(self)
@@ -338,11 +340,13 @@ class LicenseWidget(QFrame):
         )
         self.layout.addWidget(self.hostCard)
 
-        self.licenseCard = SettingCard(
+        self.licenseCard = PrimaryPushSettingCard(
+            self.tr("Show in Folder"),
             FIF.FINGERPRINT,
             self.tr("License"),
             self.tr("Machine: ") + " Unknown",
         )
+        self.licenseCard.clicked.connect(self.showLicenseFileInFolder)
         self.layout.addWidget(self.licenseCard)
 
         self.tableSeats = TableWidget(self)
@@ -350,7 +354,7 @@ class LicenseWidget(QFrame):
         self.tableSeats.setWordWrap(False)
         self.tableSeats.verticalHeader().hide()
         self.tableSeats.setColumnCount(7)
-        self.tableSeats.setHorizontalHeaderLabels([self.tr("Name"), self.tr("Product"), self.tr("Pack"), self.tr("Remaining Months"), self.tr("Refreshed At"), self.tr("Expires At"), self.tr("Machine")])
+        self.tableSeats.setHorizontalHeaderLabels([self.tr("Name"), self.tr("Product"), self.tr("Pack"), self.tr("Balance"), self.tr("Refreshed At"), self.tr("Expires At"), self.tr("Machine")])
         self.tableSeats.itemSelectionChanged.connect(self.updateLicenseCard)
         self.layout.addWidget(self.tableSeats)
 

@@ -4,37 +4,37 @@
 <context>
     <name>AssetsWidget</name>
     <message>
-        <location filename="../app/assets.py" line="133"/>
+        <location filename="../app/assets.py" line="137"/>
         <source>Name</source>
         <translation>资产名</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="133"/>
+        <location filename="../app/assets.py" line="137"/>
         <source>Status</source>
         <translation>状态</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="133"/>
+        <location filename="../app/assets.py" line="137"/>
         <source>Output Folder</source>
         <translation>输出目录</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="144"/>
+        <location filename="../app/assets.py" line="148"/>
         <source>Show in Folder</source>
         <translation>在文件夹中显示</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="146"/>
+        <location filename="../app/assets.py" line="150"/>
         <source>Retry</source>
         <translation>重试</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="147"/>
+        <location filename="../app/assets.py" line="151"/>
         <source>Stop</source>
         <translation>中止</translation>
     </message>
     <message>
-        <location filename="../app/assets.py" line="149"/>
+        <location filename="../app/assets.py" line="153"/>
         <source>Refresh</source>
         <translation>刷新</translation>
     </message>
@@ -42,27 +42,27 @@
 <context>
     <name>ClientWindow</name>
     <message>
-        <location filename="../NemoHub.py" line="58"/>
+        <location filename="../NemoHub.py" line="56"/>
         <source>Convert</source>
         <translation>转换</translation>
     </message>
     <message>
-        <location filename="../NemoHub.py" line="59"/>
+        <location filename="../NemoHub.py" line="57"/>
         <source>Tasks</source>
         <translation>任务</translation>
     </message>
     <message>
-        <location filename="../NemoHub.py" line="60"/>
+        <location filename="../NemoHub.py" line="58"/>
         <source>License</source>
         <translation>席位</translation>
     </message>
     <message>
-        <location filename="../NemoHub.py" line="62"/>
+        <location filename="../NemoHub.py" line="60"/>
         <source>Settings</source>
         <translation>设置</translation>
     </message>
     <message>
-        <location filename="../NemoHub.py" line="67"/>
+        <location filename="../NemoHub.py" line="65"/>
         <source>Nemo Hub</source>
         <translation>Nemo Hub</translation>
     </message>
@@ -126,191 +126,204 @@
 <context>
     <name>LicenseWidget</name>
     <message>
-        <location filename="../app/license.py" line="110"/>
-        <location filename="../app/license.py" line="344"/>
+        <location filename="../app/license.py" line="108"/>
+        <location filename="../app/license.py" line="348"/>
         <source>Machine: </source>
         <translation>机器码: </translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="112"/>
-        <location filename="../app/license.py" line="124"/>
-        <location filename="../app/license.py" line="343"/>
+        <location filename="../app/license.py" line="110"/>
+        <location filename="../app/license.py" line="119"/>
+        <location filename="../app/license.py" line="347"/>
         <source>License</source>
         <translation>证书</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="124"/>
+        <location filename="../app/license.py" line="119"/>
         <source>No License Found</source>
         <translation>没有找到证书</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="129"/>
+        <location filename="../app/license.py" line="124"/>
         <source>Failed to get machine ID</source>
         <translation>获取机器码失败</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="130"/>
+        <location filename="../app/license.py" line="125"/>
         <source>Machine ID should be generated first</source>
         <translation>首先需要生成机器码</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="141"/>
+        <location filename="../app/license.py" line="136"/>
         <source>No Seat Selected</source>
         <translation>没有找到席位</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="142"/>
+        <location filename="../app/license.py" line="137"/>
         <source>Please select a seat first</source>
         <translation>请先选择一个席位</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="154"/>
+        <location filename="../app/license.py" line="149"/>
         <source>Seat Already Taken</source>
         <translation>席位已被占据</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="155"/>
+        <location filename="../app/license.py" line="150"/>
         <source>This seat has been activated on another machine.</source>
         <translation>这个席位已经在另一台机器上激活了。</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="166"/>
+        <location filename="../app/license.py" line="161"/>
         <source>Activate License</source>
         <translation>证书已激活</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="173"/>
+        <location filename="../app/license.py" line="168"/>
         <source>You are about to activate a license on this machine.&lt;br&gt;&lt;br&gt;This will consume 1 month from your balance (Currently: {months} months)&lt;br&gt;The license will be valid for one calendar month on this machine only.&lt;br&gt;You will need to manually refresh it around {date} to continue using it.&lt;br&gt;Do you want to continue?</source>
         <translation>你即将在这台机器上激活此席位。&lt;br&gt;&lt;br&gt;这会从账户中消耗一个月的额度(目前有{months}个月)。&lt;br&gt;对这台机器的授权仅持续一个自然月。&lt;br&gt;你需要在{date}前后主动刷新此授权以继续使用。&lt;br&gt;确定继续吗？</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="188"/>
+        <location filename="../app/license.py" line="183"/>
         <source>Failed to get license</source>
         <translation>获取授权失败</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="189"/>
-        <location filename="../app/license.py" line="275"/>
+        <location filename="../app/license.py" line="184"/>
+        <location filename="../app/license.py" line="270"/>
         <source>Response({code}): {text}</source>
         <translation>Response({code}): {text}</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="204"/>
+        <location filename="../app/license.py" line="199"/>
         <source>License Activated</source>
         <translation>授权成功</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="113"/>
         <source>Expires at {date}</source>
-        <translation>于{date}过期</translation>
+        <translation type="vanished">于{date}过期</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="116"/>
+        <location filename="../app/license.py" line="73"/>
+        <source>{} Months</source>
+        <translation>{}个月</translation>
+    </message>
+    <message>
+        <location filename="../app/license.py" line="111"/>
         <source>Pause in {days} days</source>
-        <translation>于{days}后暂停</translation>
+        <translation>将于{days}日后暂停</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="205"/>
+        <location filename="../app/license.py" line="200"/>
         <source>License activated successfully! Valid for one month.</source>
         <translation>证书激活成功！有效期一个月。</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="218"/>
+        <location filename="../app/license.py" line="213"/>
         <source>Deactivate License - Warning</source>
         <translation>警告——反激活证书</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="229"/>
+        <location filename="../app/license.py" line="224"/>
         <source>&lt;b&gt;IMPORTANT: Deactivating will permanently lose your remaining days!&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;You have {days} days remaining in this license period.&lt;/b&gt;&lt;br&gt;&lt;br&gt;• These days will NOT be refunded to your account&lt;br&gt;• Activating on another machine will consume a new month from your balance&lt;br&gt;&lt;br&gt;This action is designed to prevent license abuse. Only deactivate if you&apos;re permanently moving to a different machine.&lt;br&gt;&lt;br&gt;Are you sure you want to continue?</source>
         <translation>&lt;b&gt;请注意：反激活会导致您损失剩余的使用天数并无法追回！&lt;/b&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;你目前还有{days}天剩余天数未使用。&lt;/b&gt;&lt;br&gt;&lt;br&gt;• 这些天数不会被退回到你的账户！&lt;br&gt;• 在另一台机器上激活会消耗另外的月份额度。&lt;br&gt;&lt;br&gt;这是为了对抗盗版及滥用活动，敬请理解。仅当你需要将此席位永久迁移到另一台机器上时才使用反激活。&lt;br&gt;&lt;br&gt;是否已知悉上诉内容并确认继续？</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="253"/>
+        <location filename="../app/license.py" line="248"/>
         <source>Refresh License</source>
         <translation>刷新证书</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="259"/>
+        <location filename="../app/license.py" line="254"/>
         <source>Refreshing extends your license for one calendar month and &lt;b&gt;consumes 1 month from your account balance.&lt;b&gt;&lt;br&gt;You must manually refresh your license around {date} to continue using it.&lt;br&gt;If you don&apos;t refresh, the license will pause and billing will stop.&lt;br&gt;Do you want to continue?</source>
         <translation>刷新会使本地证书额外延长一个自然月，并且&lt;b&gt;从你的席位额度中消耗一个月&lt;b&gt;&lt;br&gt;你需要在{date}日前后主动再次刷新以继续使用。&lt;br&gt;如果你不这样做，证书届时将会自动暂停并停止计费。&lt;br&gt;是否确认继续？</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="274"/>
+        <location filename="../app/license.py" line="269"/>
         <source>Failed to refresh license</source>
         <translation>刷新证书失败</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="290"/>
+        <location filename="../app/license.py" line="285"/>
         <source>License Refreshed</source>
         <translation>证书已刷新</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="291"/>
+        <location filename="../app/license.py" line="286"/>
         <source>License has been refreshed successfully! Valid for another month.</source>
         <translation>证书已刷新，延长一个月有效期。</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="326"/>
+        <location filename="../app/license.py" line="329"/>
         <source>How Seat Licenses Work</source>
         <translation>席位证书简介</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="331"/>
+        <location filename="../app/license.py" line="334"/>
         <source>Each activation consumes one month from your balance and needs to be refreshed after one calendar month. &lt;br&gt;The license will automatically pause and billing will stop if you don’t manually refresh it each month. &lt;br&gt;</source>
         <translation>每次在您的机器上激活证书将会从席位中消耗一个月的额度，并且一个月会需要主动再次刷新授权。&lt;br&gt;如果您不主动刷新授权，证书会自动暂停使用并停止计费。&lt;br&gt;</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="336"/>
+        <location filename="../app/license.py" line="339"/>
         <source>Host Name</source>
         <translation>机器名</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="345"/>
+        <source>Show in Folder</source>
+        <translation>在文件夹中显示</translation>
+    </message>
+    <message>
+        <location filename="../app/license.py" line="358"/>
         <source>Name</source>
         <translation>机器名</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="358"/>
         <source>Product</source>
         <translation>产品</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="358"/>
         <source>Pack</source>
         <translation>类别</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="358"/>
         <source>Expires At</source>
         <translation>过期日</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="358"/>
         <source>Machine</source>
         <translation>机器码</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
         <source>Remaining Months</source>
-        <translation>剩余月份</translation>
+        <translation type="vanished">剩余月份</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="353"/>
+        <location filename="../app/license.py" line="358"/>
         <source>Refreshed At</source>
         <translation>刷新于</translation>
     </message>
     <message>
         <location filename="../app/license.py" line="358"/>
+        <source>Balance</source>
+        <translation>余额</translation>
+    </message>
+    <message>
+        <location filename="../app/license.py" line="363"/>
         <source>Refresh</source>
         <translation>刷新</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="359"/>
+        <location filename="../app/license.py" line="364"/>
         <source>Deactivate</source>
         <translation>反激活</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="360"/>
+        <location filename="../app/license.py" line="365"/>
         <source>Activate</source>
         <translation>激活</translation>
     </message>
@@ -361,22 +374,22 @@
 <context>
     <name>ProxyDialog</name>
     <message>
-        <location filename="../app/proxy.py" line="177"/>
+        <location filename="../app/proxy.py" line="181"/>
         <source>Web Proxy Settings</source>
         <translation>网络代理设置</translation>
     </message>
     <message>
-        <location filename="../app/proxy.py" line="186"/>
+        <location filename="../app/proxy.py" line="190"/>
         <source>Proxy Server: </source>
         <translation>代理服务器: </translation>
     </message>
     <message>
-        <location filename="../app/proxy.py" line="193"/>
+        <location filename="../app/proxy.py" line="197"/>
         <source>Port: </source>
         <translation>端口: </translation>
     </message>
     <message>
-        <location filename="../app/proxy.py" line="197"/>
+        <location filename="../app/proxy.py" line="201"/>
         <source>Clear Proxy</source>
         <translation>清除代理</translation>
     </message>
@@ -559,7 +572,7 @@ NOTICE: all maya instances using Nemo should be closed before update.</source>
     <message>
         <location filename="../app/settings.py" line="319"/>
         <source>Welcome to Contribute</source>
-        <translation>帮助我们</translation>
+        <translation>请帮助我们改进开源代码</translation>
     </message>
     <message>
         <location filename="../app/settings.py" line="328"/>
@@ -570,12 +583,12 @@ NOTICE: all maya instances using Nemo should be closed before update.</source>
 <context>
     <name>widget</name>
     <message>
-        <location filename="../app/license.py" line="56"/>
+        <location filename="../app/license.py" line="55"/>
         <source>Failed to get machine ID</source>
         <translation>获取机器码失败</translation>
     </message>
     <message>
-        <location filename="../app/license.py" line="59"/>
+        <location filename="../app/license.py" line="58"/>
         <source>Machine: </source>
         <translation>机器码: </translation>
     </message>

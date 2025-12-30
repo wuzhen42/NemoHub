@@ -60,8 +60,12 @@ class ProxySettingsCard(SettingCard):
             else:
                 self.addressInput.clear()
             self.proxyManager.start_proxy(self.portInput.value())
+            qconfig.set(cfg.proxyIsHost, True)
         else:
             self.proxyManager.stop_proxy()
+            qconfig.set(cfg.proxyIsHost, False)
+            self.addressInput.clear()
+            qconfig.set(cfg.proxyServerAddress, "")
 
 
 def get_local_ip():
@@ -216,16 +220,3 @@ class ProxyDialog(MessageBox):
         qconfig.set(cfg.proxyServerAddress, self.originalAddress)
         qconfig.set(cfg.proxyServerPort, self.originalPort)
         super().reject()
-
-    def toggleHost(self, host):
-        self.addressInput.setDisabled(host)
-        self.portInput.setDisabled(host)
-        if host:
-            ip = get_local_ip()
-            if ip:
-                self.addressInput.setText('http://' + ip)
-            else:
-                self.addressInput.clear()
-            self.proxyManager.start_proxy(self.portInput.value())
-        else:
-            self.proxyManager.stop_proxy()

@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 from PySide6.QtCore import QTimer, Signal
 from PySide6.QtGui import QColor
@@ -53,7 +54,10 @@ class AssetsWidget(QFrame):
         row = self.table.currentRow()
         if row < 0:
             return
-        os.startfile(tasks[row].folder)
+        if os.name == 'nt':
+            os.startfile(tasks[row].folder)
+        elif os.name == 'posix':
+            subprocess.Popen(['xdg-open', os.path.dirname(tasks[row].folder)])
 
     def onClose(self):
         row = self.table.currentRow()
