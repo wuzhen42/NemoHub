@@ -85,9 +85,16 @@ class LicenseWidget(QFrame):
         self.tableSeats.resizeColumnsToContents()
 
     def get_next_renew_date(self, data):
-        refresh = datetime.datetime.fromtimestamp(data["refresh_at"])
+        if isinstance(data["refresh_at"], str):
+            refresh = datetime.datetime.fromisoformat(data["refresh_at"])
+        else:
+            refresh = datetime.datetime.fromtimestamp(data["refresh_at"])
+
         if 'to_renew_at' in data:
-            to_renew = datetime.datetime.fromtimestamp(data["to_renew_at"])
+            if isinstance(data["to_renew_at"], str):
+                to_renew = datetime.datetime.fromisoformat(data["to_renew_at"])
+            else:
+                to_renew = datetime.datetime.fromtimestamp(data["to_renew_at"])
         else:
             to_renew = refresh + datetime.timedelta(days=30)
         return to_renew
@@ -144,7 +151,7 @@ class LicenseWidget(QFrame):
             return
 
         seat = self.seats[self.tableSeats.selectedItems()[0].row()]
-        if seat['hostname']:
+        if seat['hostname'] and seat['hostname'] != self.hostName:
             InfoBar.error(
                 title=self.tr("Seat Already Taken"),
                 content=self.tr("This seat has been activated on another machine."),
@@ -158,14 +165,17 @@ class LicenseWidget(QFrame):
 
         remaining_months = seat['months']
         title = self.tr("Activate License")
-        to_renew = (datetime.datetime.now() + datetime.timedelta(days=30)).strftime("%Y-%m-%d")
+        to_renew = datetime.datetime.now() + datetime.timedelta(days=30)
+        if seat['hostname']:
+            to_renew = max(datetime.datetime.now(datetime.timezone.utc), self.get_next_renew_date(seat)) + datetime.timedelta(days=30)
+
         content = self.tr(
             "You are about to activate a license on this machine.<br><br>"
             "This will consume 1 month from your balance (Currently: {months} months)<br>"
             "The license will be valid for one calendar month on this machine only.<br>"
             "You will need to manually refresh it around {date} to continue using it.<br>"
             "Do you want to continue?"
-        ).format(months=remaining_months, date=to_renew)
+        ).format(months=remaining_months, date=to_renew.strftime("%Y-%m-%d"))
 
         parent = self.window()
         dialog = MessageDialog(title, content, parent)
