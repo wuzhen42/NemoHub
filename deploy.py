@@ -4,8 +4,6 @@ from shutil import copy
 from distutils.sysconfig import get_python_lib
 
 
-# https://blog.csdn.net/qq_25262697/article/details/129302819
-# https://www.cnblogs.com/happylee666/articles/16158458.html
 args = [
     "nuitka",
     "--standalone",
@@ -25,6 +23,7 @@ args = [
     "--product-name=NemoPuppet",
     "--file-description=\"visit nemopuppet.com\"",
     "--product-version=1.0.0",
+    "--include-data-dir=translations=translations",
     "NemoHub.py",
 ]
 os.system(" ".join(args))
