@@ -1,6 +1,6 @@
 import platform
 import os
-import locale
+from PySide6.QtCore import QLocale
 
 from qfluentwidgets import (
     QConfig,
@@ -73,8 +73,8 @@ def get_api_domain():
     Returns 'nemopuppet.cn' for China Mainland users (zh_CN), 'nemopuppet.com' otherwise.
     """
     try:
-        lang, encoding = locale.getlocale()
-        if lang == 'zh_CN':
+        locale_name = QLocale.system().name()  # e.g., 'zh_CN', 'en_US'
+        if locale_name == 'zh_CN':
             return "nemopuppet.cn"
     except:
         pass
