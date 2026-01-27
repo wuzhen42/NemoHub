@@ -7,6 +7,7 @@ import threading
 import shutil
 import zipfile
 import platform
+import ctypes
 
 import tzlocal
 from PySide6.QtCore import Qt, QTimer
@@ -63,17 +64,36 @@ class SettingsWidget(QFrame):
     def onCheckUpdate(self):
         if self.latestHub and self.latestHub > self.currentHub:
             title = self.tr("New version of NemoHub detected")
-            content = self.tr("Current version of NemoHub is {current}. The latest version is {latest}, Do you want to update?").format(current=self.currentHub, latest=self.latestHub)
+            content = self.tr(
+                "Current version of NemoHub is {current}. The latest version is {latest}, Do you want to update?"
+            ).format(current=self.currentHub, latest=self.latestHub)
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
             if w.exec():
+                if not self._has_admin_privileges():
+                    InfoBar.error(
+                        title=self.tr("Administrator privileges required"),
+                        content=self.tr(
+                            "Please restart NemoHub as administrator."
+                        ),
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=-1,
+                        parent=parent or self,
+                    )
+                    self.latestHub = None
+                    return
+
                 recv = requests.get(
                     f"https://{get_api_domain()}/api/nemohub/{self.latestHub}/windows",
                     proxies=utils.get_proxies(),
-                    stream=True
+                    stream=True,
                 )
+                recv.raise_for_status()
+
                 tmpdir = tempfile.mkdtemp()
-                output_path = "{}/NemoHub.zip".format(tmpdir)
+                output_path = os.path.join(tmpdir, "NemoHub.zip")
                 with open(output_path, "wb") as f:
                     shutil.copyfileobj(recv.raw, f)
                 with zipfile.ZipFile(output_path, allowZip64=True) as archive:
@@ -81,9 +101,23 @@ class SettingsWidget(QFrame):
                 os.remove(output_path)
 
                 target_dir = os.path.realpath(os.path.dirname(sys.argv[0]))
+
+                # Find updater executable/script
+                update_path = None
+                for ext in ("exe", "bat", "cmd"):
+                    p = os.path.join(tmpdir, f"update.{ext}")
+                    if os.path.exists(p):
+                        update_path = p
+                        break
+                if update_path is None:
+                    update_path = os.path.join(tmpdir, "update")
+
+                # Delay to release file locks, then run updater detached
+                cmd = f'cmd /c timeout /T 5 /NOBREAK > NUL & "{update_path}" "{tmpdir}" "{target_dir}"'
+
                 QApplication.quit()
                 subprocess.Popen(
-                    f"timeout 3 > NUL && .\\update {tmpdir} {target_dir}",
+                    cmd,
                     cwd=tmpdir,
                     shell=True,
                     start_new_session=True,
@@ -111,21 +145,49 @@ class SettingsWidget(QFrame):
                 currentDate = self.currentNemo[1].strftime("%Y-%m-%d")
                 latestDate = self.nightlyNemo[1].strftime("%Y-%m-%d")
                 if self.currentNemo[0] == "v0.0.0":
-                    message = self.tr("NemoMaya seems not installed on your machine yet.\nThe latest nightly version is released at {date}.").format(date=latestDate)
+                    message = self.tr(
+                        "NemoMaya seems not installed on your machine yet.\nThe latest nightly version is released at {date}."
+                    ).format(date=latestDate)
                 elif self.currentNemo[0] == "nightly":
-                    message = self.tr("Current version of NemoMaya is released at {current}.\nThe latest nightly version is released at {latest}.").format(current=currentDate, latest=latestDate)
+                    message = self.tr(
+                        "Current version of NemoMaya is released at {current}.\nThe latest nightly version is released at {latest}."
+                    ).format(current=currentDate, latest=latestDate)
                 else:
-                    message = self.tr("Current version of NemoMaya is {version}.\nThe latest nightly version is released at {date}.").format(version=self.currentNemo[0], date=latestDate)
+                    message = self.tr(
+                        "Current version of NemoMaya is {version}.\nThe latest nightly version is released at {date}."
+                    ).format(version=self.currentNemo[0], date=latestDate)
             else:
                 if self.currentNemo[0] == "v0.0.0":
-                    message = self.tr("NemoMaya seems not installed on your machine yet.\nThe latest stable version is {version}.").format(version=self.stableNemo[0])
+                    message = self.tr(
+                        "NemoMaya seems not installed on your machine yet.\nThe latest stable version is {version}."
+                    ).format(version=self.stableNemo[0])
                 else:
-                    message = self.tr("Current version of NemoMaya is {current}.\nThe latest stable version is {latest}.").format(current=self.currentNemo[0], latest=self.stableNemo[0])
-            content = self.tr("{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update.").format(message=message)
+                    message = self.tr(
+                        "Current version of NemoMaya is {current}.\nThe latest stable version is {latest}."
+                    ).format(current=self.currentNemo[0], latest=self.stableNemo[0])
+            content = self.tr(
+                "{message}\nDo you want to update now? It would take a while.\nNOTICE: all maya instances using Nemo should be closed before update."
+            ).format(message=message)
             parent = self.parent().parent().parent()
             w = MessageDialog(title, content, parent)
 
             if w.exec():
+                if not self._has_admin_privileges():
+                    InfoBar.error(
+                        title=self.tr("Administrator privileges required"),
+                        content=self.tr(
+                            "Please restart NemoHub as administrator."
+                        ),
+                        orient=Qt.Horizontal,
+                        isClosable=True,
+                        position=InfoBarPosition.TOP,
+                        duration=-1,
+                        parent=parent or self,
+                    )
+                    self.stableNemo = None
+                    self.nightlyNemo = None
+                    return
+
                 target_version = (
                     "nightly"
                     if cfg.useNightlyVersion.value
@@ -160,7 +222,7 @@ class SettingsWidget(QFrame):
                     isClosable=True,
                     position=InfoBarPosition.TOP,
                     duration=-1,
-                    parent=self,
+                    parent=parent or self,
                 )
                 self.currentNemo = None
                 self.stableNemo = None
@@ -201,12 +263,18 @@ class SettingsWidget(QFrame):
             )
             ts = ts.astimezone(tzlocal.get_localzone())
             widget.currentNemo = (version, ts.date())
-            card.setContent("Version: {version} Date:{date}".format(version=version, date=ts.strftime('%Y-%m-%d %I:%M')))
+            card.setContent(
+                "Version: {version} Date:{date}".format(
+                    version=version, date=ts.strftime("%Y-%m-%d %I:%M")
+                )
+            )
 
         threading.Thread(target=run, args=(self, self.nemoCard)).start()
 
         def run(widget):
-            response = requests.get(f"https://{get_api_domain()}/api/releases", proxies=utils.get_proxies()).json()
+            response = requests.get(
+                f"https://{get_api_domain()}/api/releases", proxies=utils.get_proxies()
+            ).json()
             versions = []
             widget.nightlyNemo = ("None", datetime.date.min)
             for item in response:
@@ -224,7 +292,7 @@ class SettingsWidget(QFrame):
         def run(widget):
             response = requests.get(
                 f"https://{get_api_domain()}/api/latest/nemohub",
-                proxies=utils.get_proxies()
+                proxies=utils.get_proxies(),
             ).json()
             widget.latestHub = version.parse(response["version"])
 
@@ -232,7 +300,10 @@ class SettingsWidget(QFrame):
 
     def browseMayaPython(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Browse mayapy"), cfg.mayapyPath.value, self.tr("Executable Files (*.exe);;All Files (*)")
+            self,
+            self.tr("Browse mayapy"),
+            cfg.mayapyPath.value,
+            self.tr("Executable Files (*.exe);;All Files (*)"),
         )
         self.mayapyCard.setContent(path)
         qconfig.set(cfg.mayapyPath, path)
@@ -249,7 +320,10 @@ class SettingsWidget(QFrame):
 
     def browseNemoModule(self):
         path, _ = QFileDialog.getOpenFileName(
-            self, self.tr("Browse Nemo Module"), cfg.nemoModulePath.value, self.tr("Maya Module Files (*.mod);;All Files (*)")
+            self,
+            self.tr("Browse Nemo Module"),
+            cfg.nemoModulePath.value,
+            self.tr("Maya Module Files (*.mod);;All Files (*)"),
         )
         self.nemoModuleCard.setContent(path)
         qconfig.set(cfg.nemoModulePath, path)
@@ -270,7 +344,7 @@ class SettingsWidget(QFrame):
             self.tr("Browse"),
             FIF.FLAG,
             self.tr("Maya Python Path"),
-            cfg.mayapyPath.value
+            cfg.mayapyPath.value,
         )
         self.mayapyCard.clicked.connect(self.browseMayaPython)
         self.layout.addWidget(self.mayapyCard)
@@ -306,7 +380,7 @@ class SettingsWidget(QFrame):
             self.tr("Browse"),
             FIF.EDIT,
             self.tr("Nemo Module Path"),
-            cfg.nemoModulePath.value
+            cfg.nemoModulePath.value,
         )
         self.nemoModuleCard.clicked.connect(self.browseNemoModule)
         self.layout.addWidget(self.nemoModuleCard)
@@ -328,3 +402,11 @@ class SettingsWidget(QFrame):
             self.tr("Proxy"),
         )
         self.layout.addWidget(self.proxyCard)
+
+    def _has_admin_privileges(self):
+        if platform.system() != "Windows":
+            return True
+        try:
+            return bool(ctypes.windll.shell32.IsUserAnAdmin())
+        except Exception:
+            return False

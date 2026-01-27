@@ -448,7 +448,7 @@ The latest nightly version is released at {latest}.</source>
         <source>Current version of NemoMaya is {version}.
 The latest nightly version is released at {date}.</source>
         <translation>当前的 Nemo Maya 版本是 {version}，
-最新的nightly版本发布于{latest}。</translation>
+最新的nightly版本发布于{date}。</translation>
     </message>
     <message>
         <location filename="../app/settings.py" line="121"/>

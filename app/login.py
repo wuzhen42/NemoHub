@@ -73,7 +73,7 @@ class LoginWindow(FramelessWindow):
         )
         self.buttonPoster.clicked.connect(
             lambda _: webbrowser.open(
-                "https://www.youtube.com/@nemopuppet",
+                f"https://www.{get_api_domain()}",
                 new=0,
                 autoraise=True,
             )
