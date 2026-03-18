@@ -17,7 +17,8 @@ from qfluentwidgets import (
     HyperlinkButton,
     LineEdit,
     BodyLabel,
-    CheckBox
+    CheckBox,
+    MessageBox,
 )
 from qfluentwidgets import FluentIcon as FIF
 
@@ -26,6 +27,24 @@ import resource_rc  # Import compiled Qt resources
 from app.utils import get_proxies
 from app.config import get_api_domain
 from app.proxy import ProxyDialog
+
+
+class MFADialog(MessageBox):
+    def __init__(self, parent=None):
+        super().__init__(
+            self.tr("Two-Factor Authentication"),
+            self.tr("A verification code has been sent to your email address.\nPlease enter the 6-digit code below."),
+            parent,
+        )
+
+        self.codeInput = LineEdit()
+        self.codeInput.setMaxLength(6)
+        self.codeInput.setPlaceholderText(self.tr("6-digit code"))
+        self.codeInput.setClearButtonEnabled(True)
+        self.textLayout.addWidget(self.codeInput)
+
+    def getCode(self):
+        return self.codeInput.text()
 
 
 class LoginWindow(FramelessWindow):
@@ -198,18 +217,41 @@ class LoginWindow(FramelessWindow):
 
     def submit(self):
         auth = None
-        try:
-            account = self.inputAccount.text()
-            password = self.inputPassword.text()
-            self.save_settings()
+        error = ""
+        account = self.inputAccount.text()
+        password = self.inputPassword.text()
+        self.save_settings()
 
+        try:
             recv = requests.post(
                 f"https://www.{get_api_domain()}/api/login",
                 data={"username": account, "password": password},
                 proxies=get_proxies()
             )
-            auth = recv.cookies
-            error = recv.text
+
+            if recv.status_code == 202:
+                dialog = MFADialog(self)
+                if not dialog.exec():
+                    return
+
+                try:
+                    verify_recv = requests.post(
+                        f"https://www.{get_api_domain()}/api/login/verify-mfa",
+                        params={
+                            "username": account,
+                            "code": dialog.getCode(),
+                        },
+                        proxies=get_proxies()
+                    )
+                    auth = verify_recv.cookies if verify_recv.ok else None
+                    error = verify_recv.text
+                except Exception as e:
+                    error = str(e)
+            elif recv.ok:
+                auth = recv.cookies
+                error = recv.text
+            else:
+                error = recv.text
         except Exception as e:
             error = str(e)
 
@@ -222,6 +264,6 @@ class LoginWindow(FramelessWindow):
                 orient=Qt.Horizontal,
                 isClosable=True,
                 position=InfoBarPosition.BOTTOM_RIGHT,
-                duration=-1,  # won't disappear automatically
+                duration=-1,
                 parent=self,
             )
