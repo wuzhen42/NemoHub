@@ -24,6 +24,7 @@ args = [
     "--file-description=\"visit nemopuppet.com\"",
     "--product-version=1.0.0",
     "--include-data-dir=translations=translations",
+    "--include-data-files=app/NemoFingerprint.dll=app/NemoFingerprint.dll",
     "NemoHub.py",
 ]
 os.system(" ".join(args))

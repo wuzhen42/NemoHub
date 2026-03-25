@@ -2,7 +2,6 @@ import os
 import datetime
 import json
 import subprocess
-import threading
 import socket
 
 import requests
@@ -38,28 +37,12 @@ class LicenseWidget(QFrame):
         self.fetchSeatLicense()
 
     def checkFingerprint(self):
-        def run(widget, card):
-            if not cfg.mayaVersion.value:
-                return
-            try:
-                result = utils.call_maya(
-                    [
-                        "import NemoMaya",
-                        "print(NemoMaya.getFingerprint())",
-                    ]
-                )
-                if not result:
-                    return
-            except subprocess.CalledProcessError:
-                widget.machineID = None
-                card.setContent(widget.tr("Failed to get machine ID"))
-                return
-            widget.machineID = result.splitlines()[-1].strip()
-            card.setContent(widget.tr("Machine: ") + widget.machineID)
-
-        thread = threading.Thread(target=run, args=(self, self.licenseCard))
-        thread.start()
-        thread.join()
+        from app.fingerprint import getFingerprint
+        self.machineID = getFingerprint() or None
+        if self.machineID:
+            self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
+        else:
+            self.licenseCard.setContent(self.tr("Failed to get machine ID"))
 
     def fetchSeatLicense(self):
         recv = requests.get(self.url + "/users/whoami", proxies=utils.get_proxies(), cookies=self.loginTuple[2])
