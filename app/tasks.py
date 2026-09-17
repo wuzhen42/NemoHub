@@ -212,7 +212,7 @@ class Task:
         args = [
             "{folder}/{name}__EXPORT.zip".format(folder=self.folder, name=self.name),
             "{folder}/{name}__BINARY.zip".format(folder=self.folder, name=self.name),
-            "{folder}/maya".format(folder=self.folder)
+            self.folder
         ]
         kargs = {
             "preview": not self.native,

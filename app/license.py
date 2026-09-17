@@ -150,7 +150,7 @@ class LicenseWidget(QFrame):
         title = self.tr("Activate License")
         to_renew = datetime.datetime.now() + datetime.timedelta(days=30)
         if seat['hostname']:
-            to_renew = max(datetime.datetime.now(datetime.timezone.utc), self.get_next_renew_date(seat)) + datetime.timedelta(days=30)
+            to_renew = max(datetime.datetime.now(), self.get_next_renew_date(seat)) + datetime.timedelta(days=30)
 
         content = self.tr(
             "You are about to activate a license on this machine.<br><br>"
@@ -238,7 +238,7 @@ class LicenseWidget(QFrame):
     def refreshSeatLicense(self):
         title = self.tr("Refresh License")
 
-        to_renew = self.get_next_renew_date(self.seatData).strftime("%Y-%m-%d")
+        to_renew = (max(datetime.datetime.now(), self.get_next_renew_date(self.seatData)) + datetime.timedelta(days=30)).strftime("%Y-%m-%d")
         content = self.tr(
             "Refreshing extends your license for one calendar month and <b>consumes 1 month from your account balance.<b><br>"
             "You must manually refresh your license around {date} to continue using it.<br>"
