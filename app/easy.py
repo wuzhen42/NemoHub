@@ -50,10 +50,10 @@ class ElidedLabel(BodyLabel):
 
 
 class EasyWidget(QFrame):
-    def __init__(self, loginTuple, parent=None):
+    def __init__(self, api, parent=None):
         super().__init__(parent=parent)
 
-        self.loginTuple = loginTuple
+        self.api = api
         self.setObjectName("Convert")
 
 
@@ -86,7 +86,7 @@ class EasyWidget(QFrame):
             cfg.convertNativeOn.value = self.optionNative.isChecked()
 
             new_task(
-                self.loginTuple,
+                self.api,
                 self.inputName.text(),
                 self.inputFile.path,
                 self.outputFolder.path,

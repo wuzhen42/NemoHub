@@ -1,369 +1,278 @@
-import os
 import datetime
-import json
-import subprocess
+import os
 import socket
+import subprocess
 
-import requests
-
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
 from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageDialog, PrimaryPushSettingCard
 from qfluentwidgets import FluentIcon as FIF
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
 
-import app.utils as utils
-from app.config import cfg, get_api_domain
+from app import utils
+from app.api import ApiError
+from app.license_store import LicenseStore, PendingIssuance, as_datetime, next_month, read_license
+from app.worker import Worker
 
 
 class LicenseWidget(QFrame):
-    def __init__(self, loginTuple, parent=None):
-        super().__init__(parent=parent)
-        self.loginTuple = loginTuple
-        self.url = f"https://www.{get_api_domain()}/api"
+    sessionExpired = Signal()
 
+    def __init__(self, api, parent=None):
+        super().__init__(parent=parent)
+        self.api = api
         self.seats = []
         self.seatData = None
-        self.machineID = None
         self.hostName = socket.gethostname()
-
-        self.refreshEnabled = False
-        self.deactivateEnabled = False
-
-        self.setObjectName("License")
+        from app.fingerprint import getFingerprint
+        self.machineID = getFingerprint() or None
+        self.store = LicenseStore(api, utils.get_license_path(), self.machineID, self.hostName)
+        self.worker = None
+        self._expired = False
+        self._reload_after = False
+        self.setObjectName('License')
         self.setup()
-
-        self.checkFingerprint()
         self.getSeatLicense()
         self.fetchSeatLicense()
 
-    def checkFingerprint(self):
-        from app.fingerprint import getFingerprint
-        self.machineID = getFingerprint() or None
-        if self.machineID:
-            self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
+    def _error(self, error):
+        if isinstance(error, ApiError) and error.status == 401:
+            self._expired = True
+            text = self.tr('Your session has expired. Please sign in again. Your offline license is unchanged.')
+        elif isinstance(error, ApiError) and error.status == 403:
+            text = self.tr('This operation is not allowed or no allocated months remain. Contact your studio administrator.') if self.api.is_subaccount else str(error)
+        elif isinstance(error, PendingIssuance):
+            text = self.tr('The previous request is not confirmed. Download the current license or retry the same operation. A retry will reuse the original request to avoid spending another month.')
+            text += '\n' + str(error)
         else:
-            self.licenseCard.setContent(self.tr("Failed to get machine ID"))
+            text = str(error)
+        if isinstance(error, ApiError) and error.status == 409:
+            self._reload_after = True
+        InfoBar.error(title=self.tr('License request failed'), content=text, orient=Qt.Horizontal,
+                      isClosable=True, position=InfoBarPosition.TOP, duration=-1, parent=self)
+
+    def _run(self, operation, success, reload=False):
+        if self.worker is not None:
+            return
+        self._success_callback = success
+        self._reload_after = False
+        self._reload_on_success = reload
+        self.worker = Worker(operation, self)
+        self.worker.succeeded.connect(self._succeeded)
+        self.worker.failed.connect(self._error)
+        self.worker.finished.connect(self._finished)
+        self.updateLicenseCard()
+        self.worker.start()
+
+    def _succeeded(self, result):
+        try:
+            self._success_callback(result)
+            self._reload_after = self._reload_on_success
+        except Exception as exc:
+            self._error(exc)
+
+    def _finished(self):
+        self.worker.deleteLater()
+        self.worker = None
+        self.updateLicenseCard()
+        if self._expired:
+            self._expired = False
+            self.sessionExpired.emit()
+        elif self._reload_after:
+            self.fetchSeatLicense()
+
+    def selectedSeat(self):
+        row = self.tableSeats.currentRow()
+        return self.seats[row] if 0 <= row < len(self.seats) else None
 
     def fetchSeatLicense(self):
-        recv = requests.get(self.url + "/users/whoami", proxies=utils.get_proxies(), cookies=self.loginTuple[2])
-        self.seats = sorted(recv.json()['seats'], key=lambda x: x['id'])
+        self._run(self.api.licenses, self._show_seats)
 
+    def _show_seats(self, seats):
+        previous = self.selectedSeat()
+        selected_id = previous['id'] if previous else (self.seatData or {}).get('seat_id')
+        self.seats = sorted(seats, key=lambda seat: seat['id'])
+        self.tableSeats.blockSignals(True)
         self.tableSeats.setRowCount(len(self.seats))
-        for i, seat in enumerate(self.seats):
-            self.tableSeats.setItem(i, 0, QTableWidgetItem(seat['hostname']))
-            self.tableSeats.setItem(i, 1, QTableWidgetItem(str(seat['product'])))
-            self.tableSeats.setItem(i, 2, QTableWidgetItem(str(seat['pack'])))
-            self.tableSeats.setItem(i, 3, QTableWidgetItem(self.tr('{} Months').format(seat['months'])))
-            if seat['refresh_at']:
-                time = datetime.datetime.fromisoformat(seat['refresh_at'])
-                self.tableSeats.setItem(i, 4, QTableWidgetItem(str(time.date())))
-            else:
-                self.tableSeats.setItem(i, 4, QTableWidgetItem('N/A'))
-            if seat['to_renew_at']:
-                time = datetime.datetime.fromisoformat(seat['to_renew_at'])
-                self.tableSeats.setItem(i, 5, QTableWidgetItem(str(time.date())))
-            else:
-                self.tableSeats.setItem(i, 5, QTableWidgetItem('N/A'))
-            self.tableSeats.setItem(i, 6, QTableWidgetItem(str(seat['fingerprint'])))
+        selected_row = None
+        for row, seat in enumerate(self.seats):
+            dates = [as_datetime(seat.get(key)) for key in ('refresh_at', 'to_renew_at')]
+            values = [seat.get('hostname') or '—', seat['product'], seat['pack'],
+                      self.tr('{} Months').format(seat['months']),
+                      *[value.astimezone().strftime('%Y-%m-%d') if value else '—' for value in dates],
+                      seat.get('fingerprint') or '—']
+            for column, value in enumerate(values):
+                self.tableSeats.setItem(row, column, QTableWidgetItem(value))
+            if seat['id'] == selected_id:
+                selected_row = row
+        if selected_row is not None:
+            self.tableSeats.selectRow(selected_row)
+        elif self.seats:
+            self.tableSeats.selectRow(0)
+        self.tableSeats.blockSignals(False)
         self.tableSeats.resizeColumnsToContents()
-
-    def get_next_renew_date(self, data):
-        if isinstance(data["refresh_at"], str):
-            refresh = datetime.datetime.fromisoformat(data["refresh_at"])
-        else:
-            refresh = datetime.datetime.fromtimestamp(data["refresh_at"])
-
-        if 'to_renew_at' in data:
-            if isinstance(data["to_renew_at"], str):
-                to_renew = datetime.datetime.fromisoformat(data["to_renew_at"])
-            else:
-                to_renew = datetime.datetime.fromtimestamp(data["to_renew_at"])
-        else:
-            to_renew = refresh + datetime.timedelta(days=30)
-        return to_renew
+        for column in range(self.tableSeats.columnCount()):
+            heading = self.tableSeats.horizontalHeaderItem(column).text()
+            width = self.tableSeats.fontMetrics().horizontalAdvance(heading) + 40
+            self.tableSeats.setColumnWidth(column, max(width, self.tableSeats.columnWidth(column)))
+        if self.api.is_studio_owner:
+            self.infoCard.setContent(self.tr('Use a studio subaccount to activate a license. Your main account can still use conversion and task services.'))
+        self.updateLicenseCard()
 
     def getSeatLicense(self):
         self.seatData = None
-        to_renew = None
-
-        license_path = utils.get_license_path()
-        if os.path.exists(license_path):
-            with open(license_path, "r") as f:
-                data = json.loads(json.load(f)["message"])
-                if data["machine"] == self.machineID:
+        expires = None
+        try:
+            if os.path.exists(self.store.path):
+                data = read_license(self.store.path)
+                if data['machine'] == self.machineID:
+                    expires = as_datetime(data.get('to_renew_at'))
                     self.seatData = data
-                    to_renew = self.get_next_renew_date(self.seatData)
-
-        if to_renew:
-            self.licenseCard.setContent(self.tr("Machine: ") + self.machineID)
-            title = self.tr("License")
-            remaining_days = max(0, (to_renew - datetime.datetime.now()).days)
-            title += " | " + self.tr("Pause in {days} days").format(days=remaining_days)
-            self.licenseCard.setTitle(title)
-            self.deactivateEnabled = True
-            if to_renew - datetime.timedelta(days=5) < datetime.datetime.now():
-                self.refreshEnabled = True
-            else:
-                self.refreshEnabled = False
+        except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
+            self._error(exc)
+        self.licenseCard.setContent(self.tr('Machine: ') + (self.machineID or self.tr('Unknown')))
+        if expires:
+            self.licenseCard.setTitle(self.tr('License') + ' | ' + self.tr('Expires: {date}').format(date=expires.astimezone().strftime('%Y-%m-%d %H:%M')))
         else:
-            self.licenseCard.setTitle(self.tr("License") + " | " + self.tr("No License Found"))
+            self.licenseCard.setTitle(self.tr('License') + ' | ' + self.tr('No License Found'))
+        self.updateLicenseCard()
+
+    def _confirm(self, title, text):
+        return MessageDialog(title, text, self.window()).exec()
+
+    def _confirm_overwrite(self, seat):
+        if not self.seatData or self.seatData['seat_id'] == seat['id']:
+            return True
+        return self._confirm(self.tr('Replace local license'), self.tr('This machine has a license from a different seat. Saving this license will replace the local file. Continue?'))
+
+    def _saved(self, data):
+        self.getSeatLicense()
+        InfoBar.success(title=self.tr('License saved'), content=self.tr('The license is saved locally and can be used offline until its expiry.'),
+                        orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
 
     def activateSeatLicense(self):
-        if not self.machineID:
-            InfoBar.error(
-                title=self.tr("Failed to get machine ID"),
-                content=self.tr("Machine ID should be generated first"),
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=-1,
-                parent=self,
-            )
+        seat = self.selectedSeat()
+        if not seat or not self.machineID or self.worker:
             return
-
-        if self.tableSeats.selectedItems() == []:
-            InfoBar.error(
-                title=self.tr("No Seat Selected"),
-                content=self.tr("Please select a seat first"),
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=-1,
-                parent=self,
-            )
+        now = datetime.datetime.now(datetime.timezone.utc)
+        expires = as_datetime(seat.get('to_renew_at'))
+        same_machine = seat.get('fingerprint') == self.machineID
+        if self.api.is_subaccount and same_machine and expires and expires > now:
+            return self.downloadLicense()
+        if not self._confirm_overwrite(seat):
             return
-
-        seat = self.seats[self.tableSeats.selectedItems()[0].row()]
-        if seat['hostname'] and seat['hostname'] != self.hostName:
-            InfoBar.error(
-                title=self.tr("Seat Already Taken"),
-                content=self.tr("This seat has been activated on another machine."),
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=-1,
-                parent=self,
-            )
+        replacement = bool(seat.get('fingerprint') and not same_machine)
+        if not self.api.is_subaccount and seat.get('hostname') and seat['hostname'] != self.hostName:
+            self._error(ApiError(403, self.tr('This seat has been activated on another machine.')))
             return
+        text = self.tr('Activate a license on this machine? This consumes one allocated month. Remaining balance: {months} month(s).').format(months=seat['months'])
+        if replacement and self.api.is_subaccount:
+            text += '\n\n' + self.tr('Replacing the machine consumes a new month. The old offline license remains valid until its expiry; no time is refunded.')
+        if self._confirm(self.tr('Activate License'), text):
+            self._run(lambda: self.store.issue('activate', seat, replace_machine=replacement), self._saved, reload=True)
 
-        remaining_months = seat['months']
-        title = self.tr("Activate License")
-        to_renew = datetime.datetime.now() + datetime.timedelta(days=30)
-        if seat['hostname']:
-            to_renew = max(datetime.datetime.now(), self.get_next_renew_date(seat)) + datetime.timedelta(days=30)
-
-        content = self.tr(
-            "You are about to activate a license on this machine.<br><br>"
-            "This will consume 1 month from your balance (Currently: {months} months)<br>"
-            "The license will be valid for one calendar month on this machine only.<br>"
-            "You will need to manually refresh it around {date} to continue using it.<br>"
-            "Do you want to continue?"
-        ).format(months=remaining_months, date=to_renew.strftime("%Y-%m-%d"))
-
-        parent = self.window()
-        dialog = MessageDialog(title, content, parent)
-
-        if not dialog.exec():
-            return
-
-        data = {"hostname": self.hostName, "machine": self.machineID, "seat": seat['id']}
-        recv = requests.post(
-            f"https://www.{get_api_domain()}/api/license/seat/activate", params=data, cookies=self.loginTuple[2],
-            proxies=utils.get_proxies()
-        )
-        if not recv.ok:
-            InfoBar.error(
-                title=self.tr("Failed to get license"),
-                content=self.tr("Response({code}): {text}").format(code=recv.status_code, text=recv.text),
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=-1,
-                parent=self,
-            )
-            return
-
-        license = recv.json()
-        license_path = utils.get_license_path()
-        with open(license_path, "w") as f:
-            json.dump(license, f, indent=4)
-
-        InfoBar.success(
-            title=self.tr("License Activated"),
-            content=self.tr("License activated successfully! Valid for one month."),
-            orient=Qt.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=5000,
-            parent=self,
-        )
-
-        self.getSeatLicense()
-        self.fetchSeatLicense()
-
-    def deactivateSeatLicense(self):
-        title = self.tr("Deactivate License - Warning")
-        to_renew = datetime.datetime.fromtimestamp(self.seatData["to_renew_at"])
-        remaining_days = max(0, (to_renew - datetime.datetime.now()).days)
-
-        content = self.tr(
-            "<b>IMPORTANT: Deactivating will permanently lose your remaining days!</b><br><br>"
-            "<b>You have {days} days remaining in this license period.</b><br><br>"
-            "• These days will NOT be refunded to your account<br>"
-            "• Activating on another machine will consume a new month from your balance<br><br>"
-            "This action is designed to prevent license abuse. Only deactivate if you're "
-            "permanently moving to a different machine.<br><br>"
-            "Are you sure you want to continue?"
-        ).format(days=remaining_days)
-
-        # Get parent window for dialog
-        parent = self.window()
-        dialog = MessageDialog(title, content, parent)
-
-        # Only proceed if user confirms
-        if not dialog.exec():
-            return
-
-        license_path = utils.get_license_path()
-        if os.path.exists(license_path):
-            os.remove(license_path)
-        seat_id = self.seatData['seat_id']
-        requests.post(
-            f"https://www.{get_api_domain()}/api/license/seat/deactivate", params={"seat": seat_id}, cookies=self.loginTuple[2],
-            proxies=utils.get_proxies()
-        )
-        self.getSeatLicense()
-        self.fetchSeatLicense()
+    def downloadLicense(self):
+        seat = self.selectedSeat()
+        if seat and self._confirm_overwrite(seat):
+            self._run(lambda: self.store.download(seat), self._saved, reload=True)
 
     def refreshSeatLicense(self):
-        title = self.tr("Refresh License")
-
-        to_renew = (max(datetime.datetime.now(), self.get_next_renew_date(self.seatData)) + datetime.timedelta(days=30)).strftime("%Y-%m-%d")
-        content = self.tr(
-            "Refreshing extends your license for one calendar month and <b>consumes 1 month from your account balance.<b><br>"
-            "You must manually refresh your license around {date} to continue using it.<br>"
-            "If you don't refresh, the license will pause and billing will stop.<br>"
-            "Do you want to continue?"
-        ).format(date=to_renew)
-
-        parent = self.window()
-        dialog = MessageDialog(title, content, parent)
-
-        if not dialog.exec():
+        seat = self.selectedSeat()
+        if not seat or self.worker or not self._confirm_overwrite(seat):
             return
+        now = datetime.datetime.now(datetime.timezone.utc)
+        end = next_month(max(now, as_datetime(seat.get('to_renew_at')) or now))
+        text = self.tr('Renewing consumes one allocated month, including an early renewal. The new expiry will be {date}. This charge cannot be reclaimed. Continue?').format(date=end.astimezone().strftime('%Y-%m-%d'))
+        if self._confirm(self.tr('Refresh License'), text):
+            self._run(lambda: self.store.issue('refresh', seat), self._saved, reload=True)
 
-        seat_id = self.seatData['seat_id']
-        recv = requests.post(
-            f"https://www.{get_api_domain()}/api/license/seat/refresh", params={"seat": seat_id}, cookies=self.loginTuple[2],
-            proxies=utils.get_proxies()
-        )
-        if not recv.ok:
-            InfoBar.error(
-                title=self.tr("Failed to refresh license"),
-                content=self.tr("Response({code}): {text}").format(code=recv.status_code, text=recv.text),
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=-1,
-                parent=self,
-            )
+    def retryPendingLicense(self):
+        try:
+            pending = self.store.pending()
+            if not pending:
+                return
+            seat = next((item for item in self.seats if item['id'] == pending['payload']['seat']), None)
+            if not seat:
+                raise PendingIssuance(self.tr('Sign in with the original subaccount and reload its balances to recover this request.'))
+            if self._confirm_overwrite(seat) and self._confirm(self.tr('Retry pending request'), self.tr('Retry the interrupted license request? If it already completed, the issued license will be downloaded without another charge.')):
+                self._run(lambda: self.store.issue(pending['action'], seat), self._saved, reload=True)
+        except Exception as exc:
+            self._error(exc)
+
+    def deactivateSeatLicense(self):
+        seat = self.selectedSeat()
+        if not seat or self.api.is_subaccount or self.worker:
             return
-
-        license = recv.json()
-        license_path = utils.get_license_path()
-        with open(license_path, "w") as f:
-            json.dump(license, f, indent=4)
-
-        InfoBar.success(
-            title=self.tr("License Refreshed"),
-            content=self.tr("License has been refreshed successfully! Valid for another month."),
-            orient=Qt.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=5000,
-            parent=self,
-        )
-
-        self.getSeatLicense()
-        self.fetchSeatLicense()
+        if self._confirm(self.tr('Deactivate License - Warning'), self.tr('Deactivate this seat and remove its local license? Remaining paid days will not be refunded.')):
+            self._run(lambda: self.store.deactivate(seat), lambda _: self.getSeatLicense(), reload=True)
 
     def updateLicenseCard(self):
-        items = self.tableSeats.selectedItems()
-        if not self.seatData:
-            if not items:
-                self.buttonActivate.setEnabled(False)
-            else:
-                self.buttonActivate.setEnabled(True)
-        else:
-            if items and str(self.seatData['machine']) == items[-1].text():
-                if self.refreshEnabled:
-                    self.buttonRefresh.setEnabled(True)
-                if self.deactivateEnabled:
-                    self.buttonDeactivate.setEnabled(True)
-            else:
-                self.buttonRefresh.setEnabled(False)
-                self.buttonDeactivate.setEnabled(False)
+        seat = self.selectedSeat()
+        ready = bool(seat and self.machineID and self.worker is None and not self.api.is_studio_owner)
+        same = bool(seat and seat.get('fingerprint') == self.machineID)
+        local_matches = bool(seat and self.seatData and self.seatData.get('seat_id') == seat['id'])
+        balance = bool(seat and seat['months'] > 0)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        expires = as_datetime(seat.get('to_renew_at')) if seat else None
+        current = bool(same and expires and expires > now)
+        # Studio users can explicitly renew early before a planned offline period.
+        renew_allowed = self.api.is_subaccount or bool(expires and expires - datetime.timedelta(days=5) <= now)
+        can_activate = not current if self.api.is_subaccount else not seat or not seat.get('fingerprint')
+        self.buttonActivate.setEnabled(ready and balance and can_activate)
+        self.buttonRetry.setVisible(self.api.is_subaccount and self.store.pending_path.exists())
+        self.buttonRetry.setEnabled(self.worker is None)
+        self.buttonRefresh.setEnabled(ready and same and balance and renew_allowed)
+        self.buttonDeactivate.setEnabled(ready and same and local_matches and not self.api.is_subaccount)
+        self.buttonDownload.setEnabled(ready and same)
+        self.buttonReload.setEnabled(self.worker is None)
 
     def showLicenseFileInFolder(self):
-        license_path = utils.get_license_path()
-        if os.path.exists(license_path):
+        if self.store.path.exists():
             if os.name == 'nt':
-                os.startfile(os.path.dirname(license_path))
-            elif os.name == 'posix':
-                subprocess.Popen(['xdg-open', os.path.dirname(license_path)])
+                os.startfile(str(self.store.path.parent))
+            else:
+                subprocess.Popen(['xdg-open', str(self.store.path.parent)])
 
     def setup(self):
         self.layout = QVBoxLayout(self)
-
-        # Add informational card explaining the license system
-        self.infoCard = SettingCard(
-            FIF.INFO,
-            self.tr("How Seat Licenses Work"),
-            self.tr(
-                "Each activation consumes one month from your balance and needs to be refreshed after one calendar month. <br>"
-                "The license will automatically pause and billing will stop if you don’t manually refresh it each month. <br>"
-            )
-        )
+        self.infoCard = SettingCard(FIF.INFO, self.tr('How Seat Licenses Work'),
+            self.tr('Activation and renewal each use one month. The saved license works offline until expiry.\nDownloading an issued studio license uses no additional months.'))
+        self.infoCard.contentLabel.setWordWrap(True)
+        self.infoCard.vBoxLayout.setAlignment(self.infoCard.contentLabel, Qt.Alignment())
+        self.infoCard.hBoxLayout.setStretch(2, 1)
+        self.infoCard.hBoxLayout.setStretch(self.infoCard.hBoxLayout.count() - 1, 0)
+        self.infoCard.setFixedHeight(90)
         self.layout.addWidget(self.infoCard)
-
-        self.hostCard = SettingCard(
-            FIF.GLOBE,
-            self.tr("Host Name"),
-            self.hostName
-        )
-        self.layout.addWidget(self.hostCard)
-
-        self.licenseCard = PrimaryPushSettingCard(
-            self.tr("Show in Folder"),
-            FIF.FINGERPRINT,
-            self.tr("License"),
-            self.tr("Machine: ") + " Unknown",
-        )
+        self.layout.addWidget(SettingCard(FIF.GLOBE, self.tr('Host Name'), self.hostName))
+        self.licenseCard = PrimaryPushSettingCard(self.tr('Show in Folder'), FIF.FINGERPRINT, self.tr('License'), self.tr('Machine: ') + (self.machineID or self.tr('Unknown')))
         self.licenseCard.clicked.connect(self.showLicenseFileInFolder)
         self.layout.addWidget(self.licenseCard)
-
         self.tableSeats = TableWidget(self)
         self.tableSeats.setBorderVisible(True)
         self.tableSeats.setWordWrap(False)
         self.tableSeats.verticalHeader().hide()
+        self.tableSeats.setSelectionBehavior(TableWidget.SelectRows)
+        self.tableSeats.setSelectionMode(TableWidget.SingleSelection)
+        self.tableSeats.setEditTriggers(TableWidget.NoEditTriggers)
         self.tableSeats.setColumnCount(7)
-        self.tableSeats.setHorizontalHeaderLabels([self.tr("Name"), self.tr("Product"), self.tr("Pack"), self.tr("Balance"), self.tr("Refreshed At"), self.tr("Expires At"), self.tr("Machine")])
+        self.tableSeats.setHorizontalHeaderLabels([self.tr('Name'), self.tr('Product'), self.tr('Pack'), self.tr('Balance'), self.tr('Refreshed'), self.tr('Expires'), self.tr('Machine')])
         self.tableSeats.itemSelectionChanged.connect(self.updateLicenseCard)
         self.layout.addWidget(self.tableSeats)
-
         buttons = QHBoxLayout()
-        self.buttonRefresh = PushButton(self.tr("Refresh"))
-        self.buttonDeactivate = PrimaryPushButton(self.tr("Deactivate"))
-        self.buttonActivate = PrimaryPushButton(self.tr("Activate"))
-        buttons.addWidget(self.buttonRefresh)
-        buttons.addWidget(self.buttonDeactivate)
-        buttons.addWidget(self.buttonActivate)
-        self.layout.addLayout(buttons)
-
+        self.buttonRetry = PushButton(self.tr('Retry pending request'))
+        self.layout.addWidget(self.buttonRetry)
+        self.buttonRetry.clicked.connect(self.retryPendingLicense)
+        self.buttonReload = PushButton(self.tr('Reload balances'))
+        self.buttonRefresh = PushButton(self.tr('Refresh'))
+        self.buttonDownload = PushButton(self.tr('Download current license'))
+        self.buttonDeactivate = PrimaryPushButton(self.tr('Deactivate'))
+        self.buttonActivate = PrimaryPushButton(self.tr('Activate'))
+        for button in (self.buttonReload, self.buttonRefresh, self.buttonDownload, self.buttonDeactivate, self.buttonActivate):
+            buttons.addWidget(button)
+        self.buttonDownload.setVisible(self.api.is_subaccount)
+        self.buttonDeactivate.setVisible(not self.api.is_subaccount)
+        self.buttonReload.clicked.connect(self.fetchSeatLicense)
         self.buttonRefresh.clicked.connect(self.refreshSeatLicense)
-        self.buttonActivate.clicked.connect(self.activateSeatLicense)
+        self.buttonDownload.clicked.connect(self.downloadLicense)
         self.buttonDeactivate.clicked.connect(self.deactivateSeatLicense)
-
-        self.buttonRefresh.setEnabled(False)
-        self.buttonActivate.setEnabled(False)
-        self.buttonDeactivate.setEnabled(False)
+        self.buttonActivate.clicked.connect(self.activateSeatLicense)
+        self.layout.addLayout(buttons)

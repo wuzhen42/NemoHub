@@ -327,6 +327,100 @@
         <source>Activate</source>
         <translation>激活</translation>
     </message>
+    <message>
+        <source>Activate a license on this machine? This consumes one allocated month. Remaining balance: {months} month(s).</source>
+        <translation>是否在此机器上激活许可证？本次激活将消耗 1 个月。当前剩余：{months} 个月。</translation>
+    </message>
+    <message>
+        <source>Activation and renewal each use one month. The saved license works offline until expiry.
+Downloading an issued studio license uses no additional months.</source>
+        <translation>激活和续期每次消耗 1 个月，保存后的许可证在到期前可离线使用。
+下载已签发的工作室许可证不会额外扣除月数。</translation>
+    </message>
+    <message>
+        <source>Deactivate this seat and remove its local license? Remaining paid days will not be refunded.</source>
+        <translation>是否停用此席位并删除其本地许可证？剩余的已付费天数不予退还。</translation>
+    </message>
+    <message>
+        <source>Download current license</source>
+        <translation>下载当前许可证</translation>
+    </message>
+    <message>
+        <source>Expires</source>
+        <translation>到期时间</translation>
+    </message>
+    <message>
+        <source>Expires: {date}</source>
+        <translation>到期时间：{date}</translation>
+    </message>
+    <message>
+        <source>License request failed</source>
+        <translation>许可证请求失败</translation>
+    </message>
+    <message>
+        <source>License saved</source>
+        <translation>许可证已保存</translation>
+    </message>
+    <message>
+        <source>Refreshed</source>
+        <translation>续期时间</translation>
+    </message>
+    <message>
+        <source>Reload balances</source>
+        <translation>刷新余额</translation>
+    </message>
+    <message>
+        <source>Renewing consumes one allocated month, including an early renewal. The new expiry will be {date}. This charge cannot be reclaimed. Continue?</source>
+        <translation>续期将消耗 1 个月，提前续期也会扣除。新的到期日期为 {date}，已消耗的月数无法收回。是否继续？</translation>
+    </message>
+    <message>
+        <source>Replace local license</source>
+        <translation>替换本地许可证</translation>
+    </message>
+    <message>
+        <source>Replacing the machine consumes a new month. The old offline license remains valid until its expiry; no time is refunded.</source>
+        <translation>更换机器将消耗新的 1 个月。旧的离线许可证在到期前仍然有效，已消耗的时间不予退还。</translation>
+    </message>
+    <message>
+        <source>Retry pending request</source>
+        <translation>重试未完成的请求</translation>
+    </message>
+    <message>
+        <source>Retry the interrupted license request? If it already completed, the issued license will be downloaded without another charge.</source>
+        <translation>是否重试中断的许可证请求？如果该请求已完成，将直接下载已签发的许可证，不会重复扣费。</translation>
+    </message>
+    <message>
+        <source>Sign in with the original subaccount and reload its balances to recover this request.</source>
+        <translation>请使用发起请求的子账号登录并刷新余额，以恢复此请求。</translation>
+    </message>
+    <message>
+        <source>The license is saved locally and can be used offline until its expiry.</source>
+        <translation>许可证已保存到本地，到期前可离线使用。</translation>
+    </message>
+    <message>
+        <source>The previous request is not confirmed. Download the current license or retry the same operation. A retry will reuse the original request to avoid spending another month.</source>
+        <translation>尚未确认上一次请求的结果。请下载当前许可证或重试原操作。重试将复用原请求，避免重复扣除月数。</translation>
+    </message>
+    <message>
+        <source>This machine has a license from a different seat. Saving this license will replace the local file. Continue?</source>
+        <translation>此机器已有其他席位的许可证。保存此许可证将替换本地文件，是否继续？</translation>
+    </message>
+    <message>
+        <source>This operation is not allowed or no allocated months remain. Contact your studio administrator.</source>
+        <translation>此操作不可用，或分配的月数已用完。请联系工作室管理员。</translation>
+    </message>
+    <message>
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <source>Use a studio subaccount to activate a license. Your main account can still use conversion and task services.</source>
+        <translation>请使用工作室子账号激活许可证。主账号仍可使用转换和任务服务。</translation>
+    </message>
+    <message>
+        <source>Your session has expired. Please sign in again. Your offline license is unchanged.</source>
+        <translation>登录已过期，请重新登录。本地离线许可证不受影响。</translation>
+    </message>
 </context>
 <context>
     <name>LoginWindow</name>
@@ -369,6 +463,22 @@
         <location filename="../app/login.py" line="220"/>
         <source>Login Failed</source>
         <translation>登录失败</translation>
+    </message>
+    <message>
+        <source>Contact your studio administrator to reset your subaccount password.</source>
+        <translation>请联系工作室管理员重置子账号密码。</translation>
+    </message>
+    <message>
+        <source>Enter your username and password.</source>
+        <translation>请输入用户名和密码。</translation>
+    </message>
+    <message>
+        <source>Username or studio/name</source>
+        <translation>用户名或 工作室/用户名</translation>
+    </message>
+    <message>
+        <source>Your session has expired. Please sign in again. Your offline license is unchanged.</source>
+        <translation>登录已过期，请重新登录。本地离线许可证不受影响。</translation>
     </message>
 </context>
 <context>
@@ -603,6 +713,23 @@ NOTICE: all maya instances using Nemo should be closed before update.</source>
         <location filename="../app/license.py" line="58"/>
         <source>Machine: </source>
         <translation>机器码: </translation>
+    </message>
+</context>
+<context>
+    <name>MFADialog</name>
+    <message>
+        <source>6-digit code</source>
+        <translation>6 位验证码</translation>
+    </message>
+    <message>
+        <source>A verification code has been sent to your email address.
+Please enter the 6-digit code below.</source>
+        <translation>验证码已发送至您的邮箱。
+请在下方输入 6 位验证码。</translation>
+    </message>
+    <message>
+        <source>Two-Factor Authentication</source>
+        <translation>双重验证</translation>
     </message>
 </context>
 </TS>

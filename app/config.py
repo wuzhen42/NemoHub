@@ -27,7 +27,7 @@ class Config(QConfig):
         "Convert",
         "MayaVersion",
         None,
-        OptionsValidator([None, 2018, 2019, 2020, 2022, 2023, 2024, 2025, 2026]),
+        OptionsValidator([None, 2018, 2019, 2020, 2022, 2023, 2024, 2025, 2026, 2027]),
     )
 
     mayapyPath = ConfigItem("Convert", "MayaPythonPath", "")
@@ -80,6 +80,11 @@ def get_api_domain():
         pass
 
     return "nemopuppet.com"
+
+
+def get_api_base_url():
+    """Optional local/test API override; production follows the system locale."""
+    return os.environ.get('NEMOHUB_API_BASE_URL', f'https://www.{get_api_domain()}/api').rstrip('/')
 
 
 cfg = Config()

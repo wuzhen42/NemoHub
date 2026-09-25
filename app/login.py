@@ -1,5 +1,4 @@
 import webbrowser
-import requests
 
 
 from PySide6.QtCore import Qt, QSize, Signal, QSettings
@@ -25,7 +24,9 @@ from qfluentwidgets import FluentIcon as FIF
 import resource_rc  # Import compiled Qt resources
 
 from app.utils import get_proxies
-from app.config import get_api_domain
+from app.config import get_api_domain, get_api_base_url
+from app.api import ApiSession
+from app.worker import Worker
 from app.proxy import ProxyDialog
 
 
@@ -48,12 +49,15 @@ class MFADialog(MessageBox):
 
 
 class LoginWindow(FramelessWindow):
-    loginSuccess = Signal(str, str, requests.cookies.RequestsCookieJar)
+    loginSuccess = Signal(object)
 
     def __init__(self):
         super().__init__()
 
         self.settings = QSettings("NemoHub", "login")
+        self.worker = None
+        self.api = None
+        self._result = None
 
         self.setupUi()
         setThemeColor("#28afe9")
@@ -85,11 +89,7 @@ class LoginWindow(FramelessWindow):
         w, h = desktop.width(), desktop.height()
         self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
-        self.buttonFindPassword.clicked.connect(
-            lambda: webbrowser.open(
-                f"https://www.{get_api_domain()}/login", new=0, autoraise=True
-            )
-        )
+        self.buttonFindPassword.clicked.connect(self.resetPassword)
         self.buttonPoster.clicked.connect(
             lambda _: webbrowser.open(
                 f"https://www.{get_api_domain()}",
@@ -148,6 +148,7 @@ class LoginWindow(FramelessWindow):
         # Username input
         self.inputAccount = LineEdit(self.widget)
         self.inputAccount.setClearButtonEnabled(True)
+        self.inputAccount.setPlaceholderText(self.tr("Username or studio/name"))
         formLayout.addWidget(self.inputAccount)
 
         # Password label
@@ -200,7 +201,7 @@ class LoginWindow(FramelessWindow):
         self.buttonPoster.setIcon(pixmap)
 
     def load_settings(self):
-        if self.settings.value("savePassword", False):
+        if self.settings.value("savePassword", False, type=bool):
             self.checkSavePassword.setChecked(True)
             self.inputPassword.setText(self.settings.value("password", ""))
         self.inputAccount.setText(self.settings.value("account", ""))
@@ -210,60 +211,63 @@ class LoginWindow(FramelessWindow):
         self.settings.setValue("account", self.inputAccount.text())
         if self.checkSavePassword.isChecked():
             self.settings.setValue("password", self.inputPassword.text())
+        else:
+            self.settings.remove("password")
 
     def showProxyDialog(self):
         dialog = ProxyDialog(self)
         dialog.exec()
 
-    def submit(self):
-        auth = None
-        error = ""
-        account = self.inputAccount.text()
-        password = self.inputPassword.text()
-        self.save_settings()
-
-        try:
-            recv = requests.post(
-                f"https://www.{get_api_domain()}/api/login",
-                data={"username": account, "password": password},
-                proxies=get_proxies()
-            )
-
-            if recv.status_code == 202:
-                dialog = MFADialog(self)
-                if not dialog.exec():
-                    return
-
-                try:
-                    verify_recv = requests.post(
-                        f"https://www.{get_api_domain()}/api/login/verify-mfa",
-                        params={
-                            "username": account,
-                            "code": dialog.getCode(),
-                        },
-                        proxies=get_proxies()
-                    )
-                    auth = verify_recv.cookies if verify_recv.ok else None
-                    error = verify_recv.text
-                except Exception as e:
-                    error = str(e)
-            elif recv.ok:
-                auth = recv.cookies
-                error = recv.text
-            else:
-                error = recv.text
-        except Exception as e:
-            error = str(e)
-
-        if auth:
-            self.loginSuccess.emit(account, password, auth)
+    def resetPassword(self):
+        if '/' in self.inputAccount.text():
+            self.showError(self.tr("Contact your studio administrator to reset your subaccount password."))
         else:
-            InfoBar.error(
-                title=self.tr("Login Failed"),
-                content=error,
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.BOTTOM_RIGHT,
-                duration=-1,
-                parent=self,
-            )
+            webbrowser.open(f"https://www.{get_api_domain()}/login", new=0, autoraise=True)
+
+    def showError(self, message):
+        InfoBar.error(title=self.tr("Login Failed"), content=str(message), orient=Qt.Horizontal,
+                      isClosable=True, position=InfoBarPosition.BOTTOM_RIGHT, duration=-1, parent=self)
+
+    def _run(self, operation):
+        self._result = None
+        for widget in (self.buttonLogin, self.buttonProxy, self.inputAccount, self.inputPassword):
+            widget.setEnabled(False)
+        self.worker = Worker(operation, self)
+        self.worker.succeeded.connect(self._succeeded)
+        self.worker.failed.connect(self.showError)
+        self.worker.finished.connect(self._finished)
+        self.worker.start()
+
+    def _succeeded(self, result):
+        self._result = result
+
+    def _finished(self):
+        self.worker.deleteLater()
+        self.worker = None
+        for widget in (self.buttonLogin, self.buttonProxy, self.inputAccount, self.inputPassword):
+            widget.setEnabled(True)
+        if self._result is True:
+            self.loginSuccess.emit(self.api)
+        elif self._result is False:
+            dialog = MFADialog(self)
+            if dialog.exec():
+                code = dialog.getCode()
+                self._run(lambda: self.api.verify_mfa(code))
+
+    def submit(self):
+        if self.worker:
+            return
+        account = self.inputAccount.text().strip()
+        password = self.inputPassword.text()
+        if not account or not password:
+            self.showError(self.tr("Enter your username and password."))
+            return
+        self.save_settings()
+        self.api = ApiSession(account, get_api_base_url(), get_proxies())
+        self._run(lambda: self.api.login(password))
+
+    def closeEvent(self, event):
+        if self.worker is not None:
+            event.ignore()
+        else:
+            super().closeEvent(event)

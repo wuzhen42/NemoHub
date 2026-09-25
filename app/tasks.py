@@ -7,12 +7,12 @@ import re
 import shutil
 import time
 
-import requests
 
-from app.config import cfg, get_api_domain
+from app.config import cfg
+from app.api import ApiError
 
 class Task:
-    def __init__(self, loginTuple, name, filepath, folder, gpu, double, force, modern, native, profile):
+    def __init__(self, api, name, filepath, folder, gpu, double, force, modern, native, profile):
         self.phase = "Wait"
         self.status = "Task"
         self.message = ""
@@ -20,7 +20,7 @@ class Task:
         self.threadPipe = None
         self.uploadThread = None
 
-        self.loginTuple = loginTuple
+        self.api = api
         self.name = name
         self.folder = folder
         self.gpu = gpu
@@ -153,20 +153,10 @@ class Task:
         self.uploadThread.start()
 
     def _upload_worker(self):
-        url = f"https://www.{get_api_domain()}/api"
-
         try:
-            message = {
-                'username': self.loginTuple[0],
-                'password': self.loginTuple[1],
-            }
-
-            recv = requests.post(url + '/login', data=message)
-            auth = recv.cookies
-
-            files = {'file': open(f'{self.folder}/{self.name}__GRAPH.json', 'rb')}
-            message = {'platform': platform.system(), 'gpu': self.gpu}
-            recv = requests.post(url + '/tasks', data=message, files=files, cookies=auth)
+            with open(f'{self.folder}/{self.name}__GRAPH.json', 'rb') as graph:
+                message = {'platform': platform.system(), 'gpu': self.gpu}
+                recv = self.api.request('POST', '/tasks', data=message, files={'file': graph})
             farm_task_id = recv.json()['id']
 
             self.message += "Upload initiated with task ID: {id}".format(id=farm_task_id) + "\n"
@@ -175,18 +165,18 @@ class Task:
             while True:
                 time.sleep(30)
 
-                recv = requests.get(url + '/task/{id}'.format(id=farm_task_id), cookies=auth)
+                recv = self.api.request('GET', '/task/{id}'.format(id=farm_task_id))
                 task_status = recv.json()['status']
 
                 if task_status == "Success":
                     self.message += "Server processing completed, downloading result..." + "\n"
 
                     # Download the result file
-                    recv = requests.get(url + '/artifact/{id}'.format(id=farm_task_id), stream=True, cookies=auth)
-                    filename = re.findall('filename=\"(.+)\"', recv.headers['content-disposition'])[0]
-                    output_path = '{folder}/{filename}'.format(folder=self.folder, filename=filename)
-                    with open(output_path, 'wb') as f:
-                        shutil.copyfileobj(recv.raw, f)
+                    with self.api.request('GET', f'/artifact/{farm_task_id}', stream=True) as recv:
+                        filename = os.path.basename(re.findall('filename="(.+)"', recv.headers['content-disposition'])[0])
+                        output_path = os.path.join(self.folder, filename)
+                        with open(output_path, 'wb') as f:
+                            shutil.copyfileobj(recv.raw, f)
 
                     self.message += "Downloaded result: {filename}".format(filename=filename) + "\n"
                     self._start_assemble_phase()
@@ -202,7 +192,8 @@ class Task:
         except Exception as e:
             self.status = "Upload Error"
             self.phase = "Failed"
-            self.message += "Upload failed: {error}".format(error=str(e)) + "\n"
+            error = "Your session has expired. Sign in again before starting another conversion." if isinstance(e, ApiError) and e.status == 401 else str(e)
+            self.message += "Upload failed: {error}".format(error=error) + "\n"
         
     def _start_assemble_phase(self):
         self.phase = "Assemble"
@@ -231,8 +222,8 @@ class Task:
 tasks = []
 
 
-def new_task(loginTuple, name, filepath, folder, gpu, double, force, modern, native, profile):
-    tasks.append(Task(loginTuple, name, filepath, folder, gpu, double, force, modern, native, profile))
+def new_task(api, name, filepath, folder, gpu, double, force, modern, native, profile):
+    tasks.append(Task(api, name, filepath, folder, gpu, double, force, modern, native, profile))
 
 
 def active_tasks():

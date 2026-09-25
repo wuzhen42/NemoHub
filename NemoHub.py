@@ -1,7 +1,7 @@
 import sys
 import os
 
-from PySide6.QtCore import QTranslator, QLocale, QLibraryInfo
+from PySide6.QtCore import QTranslator, QLocale, QLibraryInfo, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 from qfluentwidgets import (
@@ -21,19 +21,28 @@ from app.config import cfg
 
 
 class ClientWindow(FluentWindow):
-    def __init__(self, loginTuple):
+    sessionExpired = Signal()
+
+    def __init__(self, api):
         super().__init__()
 
-        self.easyArea = EasyWidget(loginTuple, self)
+        self.api = api
+        self.easyArea = EasyWidget(api, self)
         self.assetsArea = AssetsWidget(self)
-        self.settingArea = SettingsWidget(loginTuple, self)
-        self.licenseArea = LicenseWidget(loginTuple, self)
+        self.settingArea = SettingsWidget(api, self)
+        self.licenseArea = LicenseWidget(api, self)
+        self.licenseArea.sessionExpired.connect(self.sessionExpired)
 
         self.initNavigation()
         self.initWindow()
         self.taskBadge = None
-
         self.assetsArea.activeTasksChanged.connect(self.onActiveTasksBage)
+
+    def closeEvent(self, event):
+        if self.licenseArea.worker is not None:
+            event.ignore()
+        else:
+            super().closeEvent(event)
 
     def onActiveTasksBage(self, count):
         if not self.taskBadge:
@@ -107,10 +116,22 @@ if __name__ == "__main__":
     loginWindow = LoginWindow()
     loginWindow.show()
 
-    def switchToMainWindow(username, password, auth):
-        mainWindow = ClientWindow((username, password, auth))
+    mainWindow = None
+
+    def signInAgain():
+        loginWindow.show()
+        mainWindow.hide()
+        loginWindow.showError(loginWindow.tr("Your session has expired. Please sign in again. Your offline license is unchanged."))
+
+    def switchToMainWindow(api):
+        global mainWindow
+        previous = mainWindow
+        mainWindow = ClientWindow(api)
+        mainWindow.sessionExpired.connect(signInAgain)
         mainWindow.show()
-        loginWindow.close()
+        loginWindow.hide()
+        if previous:
+            previous.deleteLater()
 
     loginWindow.loginSuccess.connect(switchToMainWindow)
 

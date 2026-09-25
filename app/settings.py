@@ -40,9 +40,9 @@ from app.proxy import ProxySettingsCard
 
 
 class SettingsWidget(QFrame):
-    def __init__(self, loginTuple, parent=None):
+    def __init__(self, api, parent=None):
         super().__init__(parent=parent)
-        self.loginTuple = loginTuple
+        self.api = api
         self.currentHub = version.Version("0.2.0")
         self.latestHub = None
         self.currentNemo = None
