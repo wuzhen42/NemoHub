@@ -126,6 +126,30 @@
 <context>
     <name>LicenseWidget</name>
     <message>
+        <source>This server is missing this license feature. Please ask your administrator to update the server.</source>
+        <translation>服务器尚未提供此许可功能，请联系管理员更新服务器。</translation>
+    </message>
+    <message>
+        <source>Clear</source>
+        <translation>清除</translation>
+    </message>
+    <message>
+        <source>Clear license assignment</source>
+        <translation>清除许可绑定</translation>
+    </message>
+    <message>
+        <source>Clear the assignment on {machine}?
+Unused months stay. Reactivation costs one month.
+A matching local file is removed. Other offline copies stay valid until renewal.</source>
+        <translation>清除 {machine} 上的席位？
+未使用月数保留，重新激活消耗一个月。
+本机对应的许可文件将被删除，其他离线副本在续期截止前仍有效。</translation>
+    </message>
+    <message>
+        <source>The machine assignment changed. Please try again. A new activation costs one month; your offline file is unchanged.</source>
+        <translation>机器席位已变化，请重试。重新激活消耗一个月，现有离线许可不变。</translation>
+    </message>
+    <message>
         <location filename="../app/license.py" line="115"/>
         <location filename="../app/license.py" line="357"/>
         <source>Machine: </source>
@@ -328,8 +352,10 @@
         <translation>激活</translation>
     </message>
     <message>
-        <source>Activate a license on this machine? This consumes one allocated month. Remaining balance: {months} month(s).</source>
-        <translation>是否在此机器上激活许可证？本次激活将消耗 1 个月。当前剩余：{months} 个月。</translation>
+        <source>Activate on this machine for one month?
+Available balance: {months} month(s).</source>
+        <translation>消耗一个月，在本机激活？
+可用余额：{months} 个月。</translation>
     </message>
     <message>
         <source>Activation and renewal each use one month. The saved license works offline until expiry.
@@ -378,20 +404,23 @@ Downloading an issued studio license uses no additional months.</source>
         <translation>替换本地许可证</translation>
     </message>
     <message>
-        <source>Replacing the machine consumes a new month. The old offline license remains valid until its expiry; no time is refunded.</source>
-        <translation>更换机器将消耗新的 1 个月。旧的离线许可证在到期前仍然有效，已消耗的时间不予退还。</translation>
+        <source>The old offline license stays valid until renewal.
+Issued time is not refunded.</source>
+        <translation>旧离线许可在续期截止前仍有效，已签发时间不予退还。</translation>
     </message>
     <message>
         <source>Retry pending request</source>
         <translation>重试未完成的请求</translation>
     </message>
     <message>
-        <source>Retry the interrupted license request? If it already completed, the issued license will be downloaded without another charge.</source>
-        <translation>是否重试中断的许可证请求？如果该请求已完成，将直接下载已签发的许可证，不会重复扣费。</translation>
+        <source>Retry this request?
+An already-issued license will be downloaded without another charge.</source>
+        <translation>重试此请求？
+若已签发许可，将直接下载，不再扣除月数。</translation>
     </message>
     <message>
-        <source>Sign in with the original subaccount and reload its balances to recover this request.</source>
-        <translation>请使用发起请求的子账号登录并刷新余额，以恢复此请求。</translation>
+        <source>Sign in with the original subaccount and reopen the License tab to recover this request.</source>
+        <translation>请使用原子账号登录并重新打开许可页，以恢复此请求。</translation>
     </message>
     <message>
         <source>The license is saved locally and can be used offline until its expiry.</source>
@@ -402,8 +431,8 @@ Downloading an issued studio license uses no additional months.</source>
         <translation>尚未确认上一次请求的结果。请下载当前许可证或重试原操作。重试将复用原请求，避免重复扣除月数。</translation>
     </message>
     <message>
-        <source>This machine has a license from a different seat. Saving this license will replace the local file. Continue?</source>
-        <translation>此机器已有其他席位的许可证。保存此许可证将替换本地文件，是否继续？</translation>
+        <source>Replace the local license from another seat?</source>
+        <translation>替换本机上属于其他席位的许可文件？</translation>
     </message>
     <message>
         <source>This operation is not allowed or no allocated months remain. Contact your studio administrator.</source>
@@ -434,8 +463,10 @@ Downloading an issued studio license uses no additional months.</source>
         <translation>本期开始</translation>
     </message>
     <message>
-        <source>Renewing consumes one allocated month, including an early renewal. The new renewal deadline will be {date}. This charge cannot be reclaimed. Continue?</source>
-        <translation>续期将消耗 1 个月，提前续期也会扣除。新的续期截止日期为 {date}，已消耗的月数无法收回。是否继续？</translation>
+        <source>Use one month to renew until {date}?
+Early renewal also costs one month. No refunds.</source>
+        <translation>消耗一个月，续期至 {date}？
+提前续期同样消耗一个月，不予退还。</translation>
     </message>
     <message>
         <source>The license is saved locally and can be used offline until its renewal deadline.</source>

@@ -78,7 +78,9 @@ class ApiSession:
             raise ApiError(400, 'License recovery is available for studio subaccounts.')
         return self.request('GET', f'/client/licenses/{seat_id}').json()
 
-    def deactivate(self, seat_id):
+    def deactivate(self, seat_id, expected_revision=None):
         if self.is_subaccount:
-            raise ApiError(400, 'Studio licenses are replaced on the new machine, not deactivated.')
+            return self.request('POST', '/client/license/deactivate', json={
+                'seat': seat_id, 'expected_revision': expected_revision,
+            })
         self.request('POST', '/license/seat/deactivate', params={'seat': seat_id})

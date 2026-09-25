@@ -52,6 +52,11 @@ class PendingIssuance(Exception):
     pass
 
 
+class AssignmentChanged(ApiError):
+    def __init__(self):
+        super().__init__(409, 'The machine assignment changed. Reload and explicitly activate again; a new activation consumes one month.')
+
+
 class LicenseStore:
     def __init__(self, api, path, machine, hostname):
         self.api, self.path = api, Path(path)
@@ -90,6 +95,12 @@ class LicenseStore:
             current = next((item for item in self.api.licenses() if item['id'] == seat['id']), None)
             if not current or current['revision'] == pending['payload']['expected_revision']:
                 raise PendingIssuance('Issuance is not confirmed. Retry the same operation; its original revision will be reused.')
+            if current['fingerprint'] != self.machine:
+                # A different revision and binding prove the original request can
+                # no longer commit. End recovery without spending or replacing the
+                # local file; a new activation needs a separate user confirmation.
+                self.pending_path.unlink(missing_ok=True)
+                raise AssignmentChanged()
         data = self.save(self.api.download_license(seat['id']), seat['id'])
         if pending:
             self.pending_path.unlink(missing_ok=True)
@@ -129,6 +140,8 @@ class LicenseStore:
                 raise
             try:
                 return self.download(seat)
+            except AssignmentChanged:
+                raise
             except (requests.RequestException, ApiError, PendingIssuance, ValueError, OSError):
                 if created_pending and isinstance(exc, ApiError) and exc.status == 409:
                     # This response proves THIS request was rejected before debit.
@@ -142,7 +155,16 @@ class LicenseStore:
         return data
 
     def deactivate(self, seat):
-        self.api.deactivate(seat['id'])
+        if self.api.is_subaccount:
+            self.api.deactivate(seat['id'], expected_revision=seat['revision'])
+        else:
+            self.api.deactivate(seat['id'])
         # An unsuccessful server request must never delete the existing file.
-        if self.path.exists() and str(read_license(self.path)['seat_id']) == str(seat['id']):
+        try:
+            local_seat = read_license(self.path)['seat_id']
+        except (OSError, ValueError, KeyError, TypeError):
+            # Missing or unreadable local files do not prevent remote clearing.
+            # Leave any file whose seat cannot be identified untouched.
+            return
+        if str(local_seat) == str(seat['id']):
             self.path.unlink()
