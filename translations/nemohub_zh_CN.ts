@@ -421,6 +421,32 @@ Downloading an issued studio license uses no additional months.</source>
         <source>Your session has expired. Please sign in again. Your offline license is unchanged.</source>
         <translation>登录已过期，请重新登录。本地离线许可证不受影响。</translation>
     </message>
+    <message>
+        <source>Renew by: {date}</source>
+        <translation>续期截止：{date}</translation>
+    </message>
+    <message>
+        <source>Renew by</source>
+        <translation>续期截止</translation>
+    </message>
+    <message>
+        <source>Period starts</source>
+        <translation>本期开始</translation>
+    </message>
+    <message>
+        <source>Renewing consumes one allocated month, including an early renewal. The new renewal deadline will be {date}. This charge cannot be reclaimed. Continue?</source>
+        <translation>续期将消耗 1 个月，提前续期也会扣除。新的续期截止日期为 {date}，已消耗的月数无法收回。是否继续？</translation>
+    </message>
+    <message>
+        <source>The license is saved locally and can be used offline until its renewal deadline.</source>
+        <translation>许可证已保存到本地，续期截止日期前可离线使用。</translation>
+    </message>
+    <message>
+        <source>Activation and renewal each use one month. The local file works offline until its renewal deadline.
+Overall expiry includes unused months. Downloading an issued license uses no additional months.</source>
+        <translation>激活和续期每次消耗 1 个月，本地许可证在续期截止日期前可离线使用。
+到期时间包含尚未使用的月数。下载已签发的许可证不会额外扣除月数。</translation>
+    </message>
 </context>
 <context>
     <name>LoginWindow</name>

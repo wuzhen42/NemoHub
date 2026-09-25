@@ -95,7 +95,7 @@ class LicenseWidget(QFrame):
         self.tableSeats.setRowCount(len(self.seats))
         selected_row = None
         for row, seat in enumerate(self.seats):
-            dates = [as_datetime(seat.get(key)) for key in ('refresh_at', 'to_renew_at')]
+            dates = [as_datetime(seat.get(key)) for key in ('refresh_at', 'to_renew_at', 'expired_at')]
             values = [seat.get('hostname') or '—', seat['product'], seat['pack'],
                       self.tr('{} Months').format(seat['months']),
                       *[value.astimezone().strftime('%Y-%m-%d') if value else '—' for value in dates],
@@ -120,18 +120,18 @@ class LicenseWidget(QFrame):
 
     def getSeatLicense(self):
         self.seatData = None
-        expires = None
+        renew_by = None
         try:
             if os.path.exists(self.store.path):
                 data = read_license(self.store.path)
                 if data['machine'] == self.machineID:
-                    expires = as_datetime(data.get('to_renew_at'))
+                    renew_by = as_datetime(data.get('to_renew_at'))
                     self.seatData = data
         except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
             self._error(exc)
         self.licenseCard.setContent(self.tr('Machine: ') + (self.machineID or self.tr('Unknown')))
-        if expires:
-            self.licenseCard.setTitle(self.tr('License') + ' | ' + self.tr('Expires: {date}').format(date=expires.astimezone().strftime('%Y-%m-%d %H:%M')))
+        if renew_by:
+            self.licenseCard.setTitle(self.tr('License') + ' | ' + self.tr('Renew by: {date}').format(date=renew_by.astimezone().strftime('%Y-%m-%d %H:%M')))
         else:
             self.licenseCard.setTitle(self.tr('License') + ' | ' + self.tr('No License Found'))
         self.updateLicenseCard()
@@ -146,7 +146,7 @@ class LicenseWidget(QFrame):
 
     def _saved(self, data):
         self.getSeatLicense()
-        InfoBar.success(title=self.tr('License saved'), content=self.tr('The license is saved locally and can be used offline until its expiry.'),
+        InfoBar.success(title=self.tr('License saved'), content=self.tr('The license is saved locally and can be used offline until its renewal deadline.'),
                         orient=Qt.Horizontal, isClosable=True, position=InfoBarPosition.TOP, duration=5000, parent=self)
 
     def activateSeatLicense(self):
@@ -154,9 +154,9 @@ class LicenseWidget(QFrame):
         if not seat or not self.machineID or self.worker:
             return
         now = datetime.datetime.now(datetime.timezone.utc)
-        expires = as_datetime(seat.get('to_renew_at'))
+        renew_by = as_datetime(seat.get('to_renew_at'))
         same_machine = seat.get('fingerprint') == self.machineID
-        if self.api.is_subaccount and same_machine and expires and expires > now:
+        if self.api.is_subaccount and same_machine and renew_by and renew_by > now:
             return self.downloadLicense()
         if not self._confirm_overwrite(seat):
             return
@@ -181,7 +181,7 @@ class LicenseWidget(QFrame):
             return
         now = datetime.datetime.now(datetime.timezone.utc)
         end = next_month(max(now, as_datetime(seat.get('to_renew_at')) or now))
-        text = self.tr('Renewing consumes one allocated month, including an early renewal. The new expiry will be {date}. This charge cannot be reclaimed. Continue?').format(date=end.astimezone().strftime('%Y-%m-%d'))
+        text = self.tr('Renewing consumes one allocated month, including an early renewal. The new renewal deadline will be {date}. This charge cannot be reclaimed. Continue?').format(date=end.astimezone().strftime('%Y-%m-%d'))
         if self._confirm(self.tr('Refresh License'), text):
             self._run(lambda: self.store.issue('refresh', seat), self._saved, reload=True)
 
@@ -212,10 +212,10 @@ class LicenseWidget(QFrame):
         local_matches = bool(seat and self.seatData and self.seatData.get('seat_id') == seat['id'])
         balance = bool(seat and seat['months'] > 0)
         now = datetime.datetime.now(datetime.timezone.utc)
-        expires = as_datetime(seat.get('to_renew_at')) if seat else None
-        current = bool(same and expires and expires > now)
+        renew_by = as_datetime(seat.get('to_renew_at')) if seat else None
+        current = bool(same and renew_by and renew_by > now)
         # Studio users can explicitly renew early before a planned offline period.
-        renew_allowed = self.api.is_subaccount or bool(expires and expires - datetime.timedelta(days=5) <= now)
+        renew_allowed = self.api.is_subaccount or bool(renew_by and renew_by - datetime.timedelta(days=5) <= now)
         can_activate = not current if self.api.is_subaccount else not seat or not seat.get('fingerprint')
         self.buttonActivate.setEnabled(ready and balance and can_activate)
         self.buttonRetry.setVisible(self.api.is_subaccount and self.store.pending_path.exists())
@@ -235,7 +235,7 @@ class LicenseWidget(QFrame):
     def setup(self):
         self.layout = QVBoxLayout(self)
         self.infoCard = SettingCard(FIF.INFO, self.tr('How Seat Licenses Work'),
-            self.tr('Activation and renewal each use one month. The saved license works offline until expiry.\nDownloading an issued studio license uses no additional months.'))
+            self.tr('Activation and renewal each use one month. The local file works offline until its renewal deadline.\nOverall expiry includes unused months. Downloading an issued license uses no additional months.'))
         self.infoCard.contentLabel.setWordWrap(True)
         self.infoCard.vBoxLayout.setAlignment(self.infoCard.contentLabel, Qt.Alignment())
         self.infoCard.hBoxLayout.setStretch(2, 1)
@@ -253,8 +253,8 @@ class LicenseWidget(QFrame):
         self.tableSeats.setSelectionBehavior(TableWidget.SelectRows)
         self.tableSeats.setSelectionMode(TableWidget.SingleSelection)
         self.tableSeats.setEditTriggers(TableWidget.NoEditTriggers)
-        self.tableSeats.setColumnCount(7)
-        self.tableSeats.setHorizontalHeaderLabels([self.tr('Name'), self.tr('Product'), self.tr('Pack'), self.tr('Balance'), self.tr('Refreshed'), self.tr('Expires'), self.tr('Machine')])
+        self.tableSeats.setColumnCount(8)
+        self.tableSeats.setHorizontalHeaderLabels([self.tr('Name'), self.tr('Product'), self.tr('Pack'), self.tr('Balance'), self.tr('Period starts'), self.tr('Renew by'), self.tr('Expires'), self.tr('Machine')])
         self.tableSeats.itemSelectionChanged.connect(self.updateLicenseCard)
         self.layout.addWidget(self.tableSeats)
         buttons = QHBoxLayout()
