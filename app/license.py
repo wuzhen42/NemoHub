@@ -5,7 +5,7 @@ import subprocess
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QApplication, QFrame, QVBoxLayout, QHBoxLayout, QTableWidgetItem
-from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageBox, PrimaryPushSettingCard
+from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageBox, PrimaryPushSettingCard, CheckBox
 from qfluentwidgets import FluentIcon as FIF
 
 from app import utils
@@ -21,6 +21,7 @@ class LicenseWidget(QFrame):
         super().__init__(parent=parent)
         self.api = api
         self.seats = []
+        self.allSeats = []
         self.seatData = None
         self.hostName = socket.gethostname()
         from app.fingerprint import getFingerprint
@@ -104,19 +105,36 @@ class LicenseWidget(QFrame):
     def fetchSeatLicense(self):
         self._run(self.api.licenses, self._show_seats)
 
+    @staticmethod
+    def _is_spent(seat, now):
+        expires = as_datetime(seat.get('expired_at'))
+        return seat['months'] <= 0 and bool(expires and expires <= now)
+
     def _show_seats(self, seats):
         previous = self.selectedSeat()
         selected_id = previous['id'] if previous else (self.seatData or {}).get('seat_id')
-        self.seats = sorted(seats, key=lambda seat: seat['id'])
+        self.allSeats = sorted(seats, key=lambda seat: seat['id'])
+        self.seats = self.allSeats
+        if not self.api.is_subaccount:
+            # Expired seats with no months left cannot be used again; hide them unless asked.
+            now = datetime.datetime.now(datetime.timezone.utc)
+            spent = sum(self._is_spent(seat, now) for seat in self.allSeats)
+            self.checkShowExpired.setText(self.tr('Show expired ({count})').format(count=spent))
+            self.checkShowExpired.setVisible(spent > 0)
+            if not self.checkShowExpired.isChecked():
+                self.seats = [seat for seat in self.allSeats if not self._is_spent(seat, now)]
         self.tableSeats.blockSignals(True)
         self.tableSeats.setRowCount(len(self.seats))
         selected_row = None
         for row, seat in enumerate(self.seats):
             dates = [as_datetime(seat.get(key)) for key in ('refresh_at', 'to_renew_at', 'expired_at')]
+            fingerprint = seat.get('fingerprint')
+            if fingerprint != self.machineID and self.store.matches_machine(fingerprint):
+                fingerprint = self.tr('This machine ({fingerprint})').format(fingerprint=fingerprint)
             values = [seat.get('hostname') or '—', seat['product'], seat['pack'],
                       self.tr('{} Months').format(seat['months']),
                       *[value.astimezone().strftime('%Y-%m-%d') if value else '—' for value in dates],
-                      seat.get('fingerprint') or '—']
+                      fingerprint or '—']
             for column, value in enumerate(values):
                 self.tableSeats.setItem(row, column, QTableWidgetItem(value))
             if seat['id'] == selected_id:
@@ -141,7 +159,7 @@ class LicenseWidget(QFrame):
         try:
             if os.path.exists(self.store.path):
                 data = read_license(self.store.path)
-                if data['machine'] == self.machineID:
+                if self.store.matches_machine(data['machine']):
                     renew_by = as_datetime(data.get('to_renew_at'))
                     self.seatData = data
         except (OSError, ValueError, KeyError, TypeError, OverflowError) as exc:
@@ -170,18 +188,21 @@ class LicenseWidget(QFrame):
 
     def activateSeatLicense(self):
         seat = self.selectedSeat()
-        if not seat or not self.machineID or self.worker:
+        if not seat or not self.machineID or self.worker or self.api.is_studio_owner:
             return
         now = datetime.datetime.now(datetime.timezone.utc)
         renew_by = as_datetime(seat.get('to_renew_at'))
-        same_machine = seat.get('fingerprint') == self.machineID
-        if self.api.is_subaccount and same_machine and renew_by and renew_by > now:
-            return self.downloadLicense()
-        if not self._confirm_overwrite(seat):
+        if self.store.matches_machine(seat.get('fingerprint')):
+            if self.api.is_subaccount and renew_by and renew_by > now:
+                self.downloadLicense()
             return
-        replacement = bool(seat.get('fingerprint') and not same_machine)
+        if seat['months'] <= 0:
+            return
+        replacement = bool(seat.get('fingerprint') or seat.get('hostname'))
         if not self.api.is_subaccount and replacement:
-            self._error(ApiError(403, self.tr('This seat has been activated on another machine.')))
+            self._error(ApiError(403, self.tr('This seat is assigned to another machine. Click Clear, then Activate to use it on this machine.')))
+            return
+        if not self._confirm_overwrite(seat):
             return
         text = self.tr(
             'Activate on this machine for one month?\n'
@@ -189,7 +210,7 @@ class LicenseWidget(QFrame):
         ).format(months=seat['months'])
         if replacement and self.api.is_subaccount:
             text += '\n\n' + self.tr(
-                'The old offline license stays valid until renewal.\n'
+                'The new period starts today. The old offline license stays valid until its renewal deadline.\n'
                 'Issued time is not refunded.'
             )
         if self._confirm(self.tr('Activate License'), text):
@@ -202,14 +223,16 @@ class LicenseWidget(QFrame):
 
     def refreshSeatLicense(self):
         seat = self.selectedSeat()
-        if not seat or self.worker or not self._confirm_overwrite(seat):
+        if not seat or self.worker or self.api.is_studio_owner or seat['months'] <= 0:
             return
         now = datetime.datetime.now(datetime.timezone.utc)
-        end = next_month(max(now, as_datetime(seat.get('to_renew_at')) or now))
-        text = self.tr(
-            'Use one month to renew until {date}?\n'
-            'Early renewal also costs one month. No refunds.'
-        ).format(date=end.astimezone().strftime('%Y-%m-%d'))
+        renew_by = as_datetime(seat.get('to_renew_at'))
+        if not self.store.matches_machine(seat.get('fingerprint')) or not renew_by or renew_by > now:
+            return
+        if not self._confirm_overwrite(seat):
+            return
+        end = next_month(now)
+        text = self.tr('Use one month to renew until {date}?').format(date=end.astimezone().strftime('%Y-%m-%d'))
         if self._confirm(self.tr('Refresh License'), text):
             self._run(lambda: self.store.issue('refresh', seat), self._saved, reload=True)
 
@@ -246,15 +269,12 @@ class LicenseWidget(QFrame):
     def updateLicenseCard(self):
         seat = self.selectedSeat()
         ready = bool(seat and self.machineID and self.worker is None and not self.api.is_studio_owner)
-        same = bool(seat and seat.get('fingerprint') == self.machineID)
+        same = bool(seat and self.store.matches_machine(seat.get('fingerprint')))
         balance = bool(seat and seat['months'] > 0)
         now = datetime.datetime.now(datetime.timezone.utc)
         renew_by = as_datetime(seat.get('to_renew_at')) if seat else None
-        current = bool(same and renew_by and renew_by > now)
-        # Studio users can explicitly renew early before a planned offline period.
-        renew_allowed = self.api.is_subaccount or bool(renew_by and renew_by - datetime.timedelta(days=5) <= now)
-        can_activate = not current if self.api.is_subaccount else not seat or not seat.get('fingerprint')
-        self.buttonActivate.setEnabled(ready and balance and can_activate)
+        renew_allowed = bool(renew_by and renew_by <= now)
+        self.buttonActivate.setEnabled(ready and balance and not same)
         self.buttonRetry.setVisible(self.api.is_subaccount and self.store.pending_path.exists())
         self.buttonRetry.setEnabled(self.worker is None)
         self.buttonRefresh.setEnabled(ready and same and balance and renew_allowed)
@@ -298,6 +318,10 @@ class LicenseWidget(QFrame):
         self.tableSeats.itemSelectionChanged.connect(self.updateLicenseCard)
         self.layout.addWidget(self.tableSeats)
         buttons = QHBoxLayout()
+        self.checkShowExpired = CheckBox(self.tr('Show expired'))
+        self.checkShowExpired.setVisible(False)
+        self.checkShowExpired.toggled.connect(lambda _: self._show_seats(self.allSeats))
+        buttons.addWidget(self.checkShowExpired)
         self.buttonRetry = PushButton(self.tr('Retry pending request'))
         self.layout.addWidget(self.buttonRetry)
         self.buttonRetry.clicked.connect(self.retryPendingLicense)

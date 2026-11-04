@@ -10,6 +10,7 @@ import tempfile
 import requests
 
 from app.api import ApiError
+from app.fingerprint import validateFingerprint
 
 
 def as_datetime(value):
@@ -63,6 +64,10 @@ class LicenseStore:
         self.machine, self.hostname = machine, hostname
         self.pending_path = self.path.with_suffix(self.path.suffix + '.pending.json')
 
+    def matches_machine(self, stored):
+        return bool(self.machine and isinstance(stored, str) and stored
+                    and (stored == self.machine or validateFingerprint(stored)))
+
     def pending(self):
         if not self.pending_path.exists():
             return None
@@ -70,8 +75,9 @@ class LicenseStore:
             return json.load(stream)
 
     def _check_pending(self, pending, seat_id):
+        machine = pending.get('machine', pending['payload'].get('machine'))
         if (pending['username'] != self.api.username or pending['base_url'] != self.api.base_url
-                or pending['payload']['seat'] != seat_id or pending['payload']['machine'] != self.machine):
+                or pending['payload']['seat'] != seat_id or not self.matches_machine(machine)):
             raise PendingIssuance('Recover the pending license using its original account, server, and machine first.')
 
     def save(self, envelope, seat_id):
@@ -80,7 +86,7 @@ class LicenseStore:
         if not isinstance(envelope.get('message'), str) or not bytes.fromhex(envelope['signature']):
             raise ValueError('Invalid license envelope')
         data = json.loads(envelope['message'])
-        if data['machine'] != self.machine or str(data['seat_id']) != str(seat_id):
+        if not self.matches_machine(data['machine']) or str(data['seat_id']) != str(seat_id):
             raise ValueError('The issued license does not match this machine and seat')
         for field in ('created_at', 'expires_at', 'refresh_at', 'to_renew_at'):
             if not isinstance(data[field], (int, float)) or not math.isfinite(data[field]):
@@ -95,7 +101,7 @@ class LicenseStore:
             current = next((item for item in self.api.licenses() if item['id'] == seat['id']), None)
             if not current or current['revision'] == pending['payload']['expected_revision']:
                 raise PendingIssuance('Issuance is not confirmed. Retry the same operation; its original revision will be reused.')
-            if current['fingerprint'] != self.machine:
+            if not self.matches_machine(current['fingerprint']):
                 # A different revision and binding prove the original request can
                 # no longer commit. End recovery without spending or replacing the
                 # local file; a new activation needs a separate user confirmation.
@@ -107,14 +113,14 @@ class LicenseStore:
         return data
 
     def issue(self, action, seat, replace_machine=False):
-        payload = {'seat': seat['id']}
-        if action == 'activate' or self.api.is_subaccount:
-            payload['machine'] = self.machine
+        revision = seat.get('revision')
+        if not revision:
+            raise ApiError(400, 'This server is missing this license feature. Please ask your administrator to update the server.')
+        payload = {'seat': seat['id'], 'expected_revision': revision}
         if action == 'activate':
-            payload['hostname'] = self.hostname
+            payload.update(machine=self.machine, hostname=self.hostname)
         created_pending = False
         if self.api.is_subaccount:
-            payload['expected_revision'] = seat['revision']
             if action == 'activate':
                 payload['replace_machine'] = replace_machine
             pending = self.pending()
@@ -122,11 +128,14 @@ class LicenseStore:
                 self._check_pending(pending, seat['id'])
                 if pending['action'] != action:
                     raise PendingIssuance('Retry the original operation or download the current license first.')
-                payload = pending['payload']
+                if action == 'activate':
+                    payload = pending['payload']
+                else:
+                    payload['expected_revision'] = pending['payload']['expected_revision']
             else:
                 atomic_json(self.pending_path, {
                     'username': self.api.username, 'base_url': self.api.base_url,
-                    'action': action, 'payload': payload,
+                    'action': action, 'machine': self.machine, 'payload': payload,
                 })
                 created_pending = True
         try:

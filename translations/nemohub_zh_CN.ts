@@ -194,8 +194,8 @@ A matching local file is removed. Other offline copies stay valid until renewal.
     </message>
     <message>
         <location filename="../app/license.py" line="157"/>
-        <source>This seat has been activated on another machine.</source>
-        <translation>这个席位已经在另一台机器上激活了。</translation>
+        <source>This seat is assigned to another machine. Click Clear, then Activate to use it on this machine.</source>
+        <translation>此席位已分配给另一台机器。请先点击“清除”，再点击“激活”，即可在本机使用。</translation>
     </message>
     <message>
         <location filename="../app/license.py" line="168"/>
@@ -404,9 +404,10 @@ Downloading an issued studio license uses no additional months.</source>
         <translation>替换本地许可证</translation>
     </message>
     <message>
-        <source>The old offline license stays valid until renewal.
+        <source>The new period starts today. The old offline license stays valid until its renewal deadline.
 Issued time is not refunded.</source>
-        <translation>旧离线许可在续期截止前仍有效，已签发时间不予退还。</translation>
+        <translation>新的许可周期从今天开始。旧离线许可证在其续期截止前仍然有效。
+已签发的时长不予退还。</translation>
     </message>
     <message>
         <source>Retry pending request</source>
@@ -463,10 +464,12 @@ An already-issued license will be downloaded without another charge.</source>
         <translation>本期开始</translation>
     </message>
     <message>
-        <source>Use one month to renew until {date}?
-Early renewal also costs one month. No refunds.</source>
-        <translation>消耗一个月，续期至 {date}？
-提前续期同样消耗一个月，不予退还。</translation>
+        <source>Use one month to renew until {date}?</source>
+        <translation>使用一个月额度，续期至 {date}？</translation>
+    </message>
+    <message>
+        <source>This machine ({fingerprint})</source>
+        <translation>本机（{fingerprint}）</translation>
     </message>
     <message>
         <source>The license is saved locally and can be used offline until its renewal deadline.</source>
