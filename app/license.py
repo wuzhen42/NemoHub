@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QApplication, QFrame, QVBoxLayout, QHBoxLayout, QT
 from qfluentwidgets import SettingCard, InfoBar, InfoBarPosition, TableWidget, PrimaryPushButton, PushButton, MessageBox, PrimaryPushSettingCard, CheckBox
 from qfluentwidgets import FluentIcon as FIF
 
-from app import utils
+from app import utils, config
 from app.api import ApiError
 from app.license_store import AssignmentChanged, LicenseStore, PendingIssuance, as_datetime, next_month, read_license
 from app.worker import Worker
@@ -286,11 +286,11 @@ class LicenseWidget(QFrame):
         self.buttonDownload.setEnabled(ready and same)
 
     def showLicenseFileInFolder(self):
-        if self.store.path.exists():
-            if os.name == 'nt':
-                os.startfile(str(self.store.path.parent))
-            else:
-                subprocess.Popen(['xdg-open', str(self.store.path.parent)])
+        path = str(self.store.path.parent) if self.store.path.exists() else config.get_config_dir()
+        if os.name == 'nt':
+            os.startfile(path)
+        else:
+            subprocess.Popen(['xdg-open', path])
 
     def setup(self):
         self.layout = QVBoxLayout(self)
