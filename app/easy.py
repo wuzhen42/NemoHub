@@ -66,6 +66,7 @@ class EasyWidget(QFrame):
         self.optionForce.setChecked(cfg.convertForceOn.value)
         self.optionModern.setChecked(cfg.convertModernOn.value)
         self.optionNative.setChecked(cfg.convertNativeOn.value)
+        self.optionEmbedded.setChecked(cfg.convertEmbeddedOn.value)
         self.buttonSubmit.clicked.connect(self.submit)
 
     def setInputPath(self, path):
@@ -84,6 +85,7 @@ class EasyWidget(QFrame):
             cfg.convertForceOn.value = self.optionForce.isChecked()
             cfg.convertModernOn.value = self.optionModern.isChecked()
             cfg.convertNativeOn.value = self.optionNative.isChecked()
+            cfg.convertEmbeddedOn.value = self.optionEmbedded.isChecked()
 
             new_task(
                 self.api,
@@ -95,7 +97,8 @@ class EasyWidget(QFrame):
                 self.optionForce.isChecked(),
                 self.optionModern.isChecked(),
                 self.optionNative.isChecked(),
-                False
+                False,
+                embedded=self.optionEmbedded.isChecked(),
             )
         except Exception as e:
             InfoBar.error(
@@ -193,6 +196,7 @@ class EasyWidget(QFrame):
         self.optionGPU = PillPushButton("gpu")
         self.optionNative = PillPushButton("native")
         self.optionModern = PillPushButton("turbo")
+        self.optionEmbedded = PillPushButton(self.tr("embedded"))
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 0, 0
         )
@@ -207,6 +211,7 @@ class EasyWidget(QFrame):
         )
         subLayout.addWidget(self.optionNative, 1, 1)
         subLayout.addWidget(self.optionModern, 1, 2)
+        subLayout.addWidget(self.optionEmbedded, 1, 3)
         subLayout.addItem(
             QSpacerItem(20, 2, QSizePolicy.Expanding, QSizePolicy.Minimum), 1, 4
         )

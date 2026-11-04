@@ -118,6 +118,10 @@
         <translation>资产名: </translation>
     </message>
     <message>
+        <source>embedded</source>
+        <translation>嵌入</translation>
+    </message>
+    <message>
         <location filename="../app/easy.py" line="220"/>
         <source>GO</source>
         <translation>启动</translation>

@@ -108,7 +108,7 @@ class LicenseWidget(QFrame):
     @staticmethod
     def _is_spent(seat, now):
         expires = as_datetime(seat.get('expired_at'))
-        return seat['months'] <= 0 and bool(expires and expires <= now)
+        return seat['months'] <= 0 and bool(not expires or expires <= now)
 
     def _show_seats(self, seats):
         previous = self.selectedSeat()

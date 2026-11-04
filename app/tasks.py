@@ -6,13 +6,14 @@ import platform
 import re
 import shutil
 import time
+from pathlib import Path
 
 
 from app.config import cfg
 from app.api import ApiError
 
 class Task:
-    def __init__(self, api, name, filepath, folder, gpu, double, force, modern, native, profile):
+    def __init__(self, api, name, filepath, folder, gpu, double, force, modern, native, profile, embedded):
         self.phase = "Wait"
         self.status = "Task"
         self.message = ""
@@ -26,6 +27,7 @@ class Task:
         self.gpu = gpu
         self.modern = modern
         self.native = native
+        self.embedded = embedded
 
         self._start_export_phase(name, filepath, folder, double, force, profile)
 
@@ -200,14 +202,22 @@ class Task:
         self.status = "Assemble Running"
         self.message += "\n\n=====================Starting Assemble Phase=====================\n"
 
+        output_folder = self.folder
+        if not self.embedded:
+            destination = Path(self.folder) / "maya"
+            destination.mkdir(exist_ok=True)
+            output_folder = destination.as_posix()
+            self.message += f"Assembly output: {output_folder}\n"
+
         args = [
             "{folder}/{name}__EXPORT.zip".format(folder=self.folder, name=self.name),
             "{folder}/{name}__BINARY.zip".format(folder=self.folder, name=self.name),
-            self.folder
+            output_folder
         ]
         kargs = {
             "preview": not self.native,
-            "ctrl_proxy": self.modern
+            "ctrl_proxy": self.modern,
+            "embedded": self.embedded,
         }
 
         def cast(x):
@@ -222,8 +232,8 @@ class Task:
 tasks = []
 
 
-def new_task(api, name, filepath, folder, gpu, double, force, modern, native, profile):
-    tasks.append(Task(api, name, filepath, folder, gpu, double, force, modern, native, profile))
+def new_task(api, name, filepath, folder, gpu, double, force, modern, native, profile, embedded):
+    tasks.append(Task(api, name, filepath, folder, gpu, double, force, modern, native, profile, embedded))
 
 
 def active_tasks():

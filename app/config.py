@@ -51,6 +51,7 @@ class Config(QConfig):
     convertForceOn = ConfigItem("Convert", "ForceOptionOn", True, BoolValidator())
     convertProfileOn = ConfigItem("Convert", "ProfileOptionOn", False, BoolValidator())
     convertGpuOn = ConfigItem("Convert", "GpuOptionOn", True, BoolValidator())
+    convertEmbeddedOn = ConfigItem("Convert", "EmbeddedOptionOn", True, BoolValidator())
 
 
 def get_config_dir():
