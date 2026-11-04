@@ -372,8 +372,8 @@ Downloading an issued studio license uses no additional months.</source>
         <translation>是否停用此席位并删除其本地许可证？剩余的已付费天数不予退还。</translation>
     </message>
     <message>
-        <source>Download current license</source>
-        <translation>下载当前许可证</translation>
+        <source>Download</source>
+        <translation>下载</translation>
     </message>
     <message>
         <source>Expires</source>

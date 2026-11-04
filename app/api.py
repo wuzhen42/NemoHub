@@ -74,9 +74,8 @@ class ApiSession:
         return self.request('POST', f'/license/seat/{action}', params=payload).json()
 
     def download_license(self, seat_id):
-        if not self.is_subaccount:
-            raise ApiError(400, 'License recovery is available for studio subaccounts.')
-        return self.request('GET', f'/client/licenses/{seat_id}').json()
+        path = f'/client/licenses/{seat_id}' if self.is_subaccount else f'/license/seat/{seat_id}'
+        return self.request('GET', path).json()
 
     def deactivate(self, seat_id, expected_revision=None):
         if self.is_subaccount:

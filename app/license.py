@@ -283,7 +283,7 @@ class LicenseWidget(QFrame):
         assigned = bool(seat and (seat.get('fingerprint') or seat.get('hostname')))
         self.buttonDeactivate.setEnabled(assigned and self.worker is None
                                          and not self.api.is_studio_owner)
-        self.buttonDownload.setEnabled(ready and same)
+        self.buttonDownload.setEnabled(same and self.worker is None)
 
     def showLicenseFileInFolder(self):
         path = str(self.store.path.parent) if self.store.path.exists() else config.get_config_dir()
@@ -326,12 +326,11 @@ class LicenseWidget(QFrame):
         self.layout.addWidget(self.buttonRetry)
         self.buttonRetry.clicked.connect(self.retryPendingLicense)
         self.buttonRefresh = PushButton(self.tr('Refresh'))
-        self.buttonDownload = PushButton(self.tr('Download current license'))
+        self.buttonDownload = PushButton(self.tr('Download'))
         self.buttonDeactivate = PrimaryPushButton(self.tr('Clear'))
         self.buttonActivate = PrimaryPushButton(self.tr('Activate'))
         for button in (self.buttonRefresh, self.buttonDownload, self.buttonDeactivate, self.buttonActivate):
             buttons.addWidget(button)
-        self.buttonDownload.setVisible(self.api.is_subaccount)
         self.buttonDeactivate.setVisible(not self.api.is_studio_owner)
         self.buttonRefresh.clicked.connect(self.refreshSeatLicense)
         self.buttonDownload.clicked.connect(self.downloadLicense)
